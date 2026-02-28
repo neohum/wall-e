@@ -32,6 +32,13 @@ interface SchoolInfo {
 }
 
 // ===== RPC Type (mirrors bun side) =====
+interface UpdateCheckResult {
+  updateAvailable: boolean;
+  latestVersion: string;
+  currentVersion: string;
+  error?: string;
+}
+
 type SettingsRPC = {
   bun: {
     requests: {
@@ -43,6 +50,8 @@ type SettingsRPC = {
       setAutoStart: { params: { enabled: boolean }; response: void };
       searchSchool: { params: { schoolName: string }; response: SchoolInfo[] };
       geocodeAddress: { params: { address: string }; response: { lat: number; lon: number } | null };
+      checkForUpdate: { params: undefined; response: UpdateCheckResult };
+      applyUpdate: { params: undefined; response: void };
     };
     messages: {};
   };
@@ -500,6 +509,58 @@ async function init(): Promise<void> {
       audio.volume = 0.5;
       audio.play().catch(() => { });
     }
+  });
+
+  // Manual update check
+  document.getElementById("btnCheckUpdate")?.addEventListener("click", async () => {
+    const btn = document.getElementById("btnCheckUpdate") as HTMLButtonElement;
+    const statusEl = document.getElementById("updateStatus")!;
+
+    btn.disabled = true;
+    btn.textContent = "확인 중...";
+    statusEl.textContent = "";
+    statusEl.className = "update-status";
+
+    try {
+      const result = await rpc.request.checkForUpdate();
+
+      if (result.error) {
+        statusEl.textContent = `업데이트 확인 실패: ${result.error}`;
+        statusEl.className = "update-status error";
+      } else if (result.updateAvailable) {
+        statusEl.textContent = `v${result.latestVersion} 업데이트가 있습니다 (현재: v${result.currentVersion})`;
+        statusEl.className = "update-status available";
+
+        // Show apply button
+        const applyBtn = document.getElementById("btnApplyUpdate") as HTMLButtonElement;
+        if (applyBtn) {
+          applyBtn.style.display = "inline-block";
+          applyBtn.onclick = async () => {
+            applyBtn.disabled = true;
+            applyBtn.textContent = "업데이트 중...";
+            statusEl.textContent = "업데이트 다운로드 및 적용 중...";
+            statusEl.className = "update-status";
+            try {
+              await rpc.request.applyUpdate();
+            } catch {
+              statusEl.textContent = "업데이트 적용에 실패했습니다";
+              statusEl.className = "update-status error";
+              applyBtn.disabled = false;
+              applyBtn.textContent = "업데이트 적용";
+            }
+          };
+        }
+      } else {
+        statusEl.textContent = `최신 버전입니다 (v${result.currentVersion})`;
+        statusEl.className = "update-status latest";
+      }
+    } catch {
+      statusEl.textContent = "업데이트 확인 중 오류가 발생했습니다";
+      statusEl.className = "update-status error";
+    }
+
+    btn.disabled = false;
+    btn.textContent = "업데이트 확인";
   });
 
   // Save — send to bun process which writes JSON file

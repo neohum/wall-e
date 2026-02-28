@@ -790,3 +790,58 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ===== Update Section ===== */
+.update-group {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.update-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn-update {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: rgba(22, 163, 74, 0.15);
+  color: #15803d;
+  border: 1px solid rgba(22, 163, 74, 0.3);
+}
+
+.btn-update:hover {
+  background: rgba(22, 163, 74, 0.25);
+}
+
+.btn-update:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.update-status {
+  font-size: 0.75rem;
+  margin-top: 6px;
+  color: var(--text-muted);
+  min-height: 1.2em;
+}
+
+.update-status.available {
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.update-status.latest {
+  color: #15803d;
+}
+
+.update-status.error {
+  color: #b91c1c;
+}

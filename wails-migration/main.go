@@ -17,6 +17,10 @@ var assets embed.FS
 var neisAPIKey string
 
 func main() {
+	if !ensureSingleInstance() {
+		return
+	}
+
 	app := NewApp(neisAPIKey)
 
 	err := wails.Run(&options.App{

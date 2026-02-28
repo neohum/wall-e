@@ -143,6 +143,8 @@ type SettingsRPC = {
       setAutoStart: { params: { enabled: boolean }; response: void };
       searchSchool: { params: { schoolName: string }; response: SchoolSearchResult[] };
       geocodeAddress: { params: { address: string }; response: { lat: number; lon: number } | null };
+      checkForUpdate: { params: undefined; response: UpdateCheckResult };
+      applyUpdate: { params: undefined; response: void };
     };
     messages: {};
   };
@@ -485,6 +487,17 @@ function openSettings() {
           } catch (err) {
             console.error("[geocode] error:", err);
             return null;
+          }
+        },
+        checkForUpdate: async () => {
+          return await autoUpdater.checkForUpdate();
+        },
+        applyUpdate: async () => {
+          console.log("[updater] User requested update from settings");
+          try {
+            await autoUpdater.downloadAndApply();
+          } catch (err) {
+            console.error("[updater] Update failed:", err);
           }
         },
       },

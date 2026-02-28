@@ -55,7 +55,8 @@
       "Bash(wails version:*)",
       "Bash(wails build:*)",
       "Bash(make dev:*)",
-      "Bash(make installer:*)"
+      "Bash(make installer:*)",
+      "Bash(go vet:*)"
     ]
   }
 }
