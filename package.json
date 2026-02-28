@@ -1,0 +1,24 @@
+{
+  "name": "wall-e",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "electrobun build --env=dev && bun scripts/post-build.ts dev && electrobun dev",
+    "dev": "electrobun dev --watch",
+    "build:dev": "electrobun build --env=dev && bun scripts/post-build.ts dev",
+    "build:release": "electrobun build --env=stable && bun scripts/post-build.ts stable"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "@types/bun": "latest",
+    "rcedit": "^5.0.2",
+    "sharp": "^0.34.5"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "electrobun": "^1.14.4"
+  }
+}

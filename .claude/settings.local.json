@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:11ukul.com)",
+      "WebFetch(domain:blackboard.sh)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(curl:*)",
+      "Bash(gh api:*)",
+      "Bash(bun:*)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(mkdir:*)",
+      "Bash(npx electrobun:*)",
+      "Bash(tar:*)",
+      "Bash(taskkill:*)",
+      "Bash(rm:*)",
+      "Bash(tasklist:*)",
+      "Bash(ls:*)",
+      "Bash(xargs grep:*)",
+      "Bash(grep:*)",
+      "Bash(xxd:*)",
+      "Bash(cmd:*)",
+      "Bash(find:*)",
+      "Bash(xargs cat:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(gh search:*)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(zig version:*)",
+      "Bash(wmic process:*)",
+      "Bash(fi)",
+      "Bash(powershell:*)",
+      "Bash(git clone:*)",
+      "WebFetch(domain:unsplash.com)",
+      "Bash(where:*)",
+      "Bash(/e/works/project/wall-e/node_modules/rcedit/bin/rcedit-x64.exe:*)",
+      "Bash(bunx tsc:*)"
+    ]
+  }
+}

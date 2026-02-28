@@ -1,0 +1,560 @@
+/* ===== CSS Variables ===== */
+:root {
+  --bg-primary: #e8ecf4;
+  --bg-secondary: #dde4f0;
+  --bg-panel: rgba(255, 255, 255, 0.5);
+  --bg-panel-hover: rgba(255, 255, 255, 0.65);
+  --accent-cyan: #3b82f6;
+  --accent-amber: #d97706;
+  --accent-red: #dc2626;
+  --accent-green: #16a34a;
+  --accent-blue: #3b82f6;
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.6);
+}
+
+/* ===== Reset & Base ===== */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  background: transparent !important;
+}
+
+body {
+  height: 100%;
+  font-family: 'Segoe UI', 'Malgun Gothic', '맑은 고딕', sans-serif;
+  background: transparent !important;
+  color: var(--text-primary);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.window-frame {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #e8ecf4 0%, #dde4f0 50%, #e8ecf4 100%);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+.window-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--bg-image, none) center/cover no-repeat;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+.window-frame > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ===== Top Bar (Frameless Titlebar) ===== */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0 6px 16px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+  gap: 16px;
+  user-select: none;
+}
+
+.top-bar__left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.app-logo {
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+
+.school-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  white-space: nowrap;
+}
+
+.class-info {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.top-bar__center {
+  display: flex;
+  align-items: center;
+}
+
+.datetime {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.date {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+.time {
+  font-size: 1.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  letter-spacing: 1px;
+}
+
+.top-bar__right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.weather-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.weather-icon {
+  font-size: 1.3rem;
+}
+
+.weather-temp {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.air-quality {
+  display: flex;
+  gap: 6px;
+}
+
+.pm-badge {
+  font-size: 0.7rem;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  background: rgba(148, 163, 184, 0.2);
+  color: var(--text-secondary);
+}
+
+.pm-badge.good { background: rgba(22, 163, 74, 0.15); color: #15803d; }
+.pm-badge.moderate { background: rgba(59, 130, 246, 0.15); color: #1d4ed8; }
+.pm-badge.unhealthy { background: rgba(217, 119, 6, 0.15); color: #b45309; }
+.pm-badge.very-unhealthy { background: rgba(220, 38, 38, 0.15); color: #b91c1c; }
+
+.class-status-badge {
+  font-size: 0.8rem;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-weight: 700;
+  background: rgba(148, 163, 184, 0.2);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.class-status-badge.in-class {
+  background: rgba(220, 38, 38, 0.15);
+  color: #b91c1c;
+  animation: pulse-glow 2s infinite;
+}
+
+.class-status-badge.break-time {
+  background: rgba(22, 163, 74, 0.15);
+  color: #15803d;
+}
+
+.class-status-badge.before-school,
+.class-status-badge.after-school {
+  background: rgba(148, 163, 184, 0.2);
+  color: var(--text-secondary);
+}
+
+.class-status-badge.prep-time {
+  background: rgba(217, 119, 6, 0.15);
+  color: #b45309;
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* ===== Settings Button ===== */
+.settings-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settings-btn:hover {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-cyan);
+}
+
+.settings-btn:active {
+  transform: scale(0.92);
+}
+
+/* ===== Window Controls (Frameless) ===== */
+.window-controls {
+  display: flex;
+  align-items: stretch;
+  margin-left: 8px;
+  height: 100%;
+}
+
+.win-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.win-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text-primary);
+}
+
+.win-btn--close:hover {
+  background: #e81123;
+  color: #fff;
+}
+
+.win-btn svg {
+  flex-shrink: 0;
+}
+
+/* Ensure interactive elements in top-bar are not draggable */
+.top-bar__right .pm-badge,
+.top-bar__right .class-status-badge,
+.top-bar__right .weather-info {
+}
+
+/* ===== Main Content ===== */
+.main-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 16px;
+  padding: 16px 24px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ===== Panel ===== */
+.panel {
+  background: var(--bg-panel);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.panel__header h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+}
+
+.panel__subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.panel__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+}
+
+/* Scrollbar styling */
+.panel__body::-webkit-scrollbar {
+  width: 4px;
+}
+.panel__body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.panel__body::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 2px;
+}
+
+/* ===== Timetable ===== */
+.timetable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.timetable th,
+.timetable td {
+  padding: 10px 8px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.timetable th {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent-cyan);
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.timetable th.period-col {
+  width: 60px;
+}
+
+.timetable td {
+  color: var(--text-primary);
+}
+
+.timetable td.empty {
+  color: var(--text-muted);
+}
+
+/* Today's column highlight */
+.timetable th.today-col,
+.timetable td.today-col {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+/* Current period highlight */
+.timetable tr.current-period td {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: rgba(220, 38, 38, 0.25);
+  color: #991b1b;
+  font-weight: 700;
+}
+
+.timetable tr.current-period td.today-col {
+  background: rgba(220, 38, 38, 0.18);
+  box-shadow: inset 0 0 12px rgba(220, 38, 38, 0.1);
+}
+
+/* Next period highlight */
+.timetable tr.next-period td.today-col {
+  background: rgba(22, 163, 74, 0.1);
+  border-color: rgba(22, 163, 74, 0.2);
+}
+
+/* Period number cell */
+.timetable td.period-num {
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.timetable td.period-time {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 2px;
+}
+
+/* ===== Meals ===== */
+.meal-card {
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  transition: all 0.3s ease;
+}
+
+.meal-card.today {
+  border-color: var(--accent-cyan);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.meal-card__date {
+  font-size: 0.75rem;
+  color: var(--accent-amber);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.meal-card__date .day-label {
+  color: var(--accent-cyan);
+  margin-left: 6px;
+}
+
+.meal-card__menu {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.meal-card__menu .allergen {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  vertical-align: super;
+}
+
+/* ===== Events ===== */
+.event-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.event-item:last-child {
+  border-bottom: none;
+}
+
+.event-item__date {
+  flex-shrink: 0;
+  text-align: center;
+  min-width: 48px;
+}
+
+.event-item__month {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.event-item__day {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent-amber);
+  line-height: 1.2;
+}
+
+.event-item__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.event-item__name {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.event-item__detail {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.event-item.today {
+  background: rgba(59, 130, 246, 0.06);
+  border-radius: 6px;
+  padding: 8px;
+  margin: 0 -8px;
+}
+
+.event-item.today .event-item__day {
+  color: var(--accent-cyan);
+}
+
+/* ===== Loading / Empty States ===== */
+.loading-placeholder {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 40px 16px;
+  font-size: 0.85rem;
+}
+
+.error-message {
+  text-align: center;
+  color: #b45309;
+  padding: 20px 16px;
+  font-size: 0.8rem;
+  background: rgba(217, 119, 6, 0.1);
+  border-radius: 8px;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 900px) {
+  .main-content {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+
+  .top-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .top-bar__center {
+    order: -1;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 1200px) and (min-width: 901px) {
+  .main-content {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .timetable-panel {
+    grid-column: 1 / -1;
+  }
+}
