@@ -2,6 +2,8 @@ import { BrowserWindow, BrowserView, ApplicationMenu, Tray, Utils } from "electr
 import { join, basename, extname } from "node:path";
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dlopen, FFIType, JSCallback } from "bun:ffi";
+import { createAutoUpdater, type UpdateCheckResult } from "./updater";
+
 
 // ===== Settings JSON File Management =====
 
@@ -37,15 +39,17 @@ const DEFAULT_SETTINGS: Settings = {
   backgroundId: "",
 };
 
-// Store settings.json next to the executable for portability
-const SETTINGS_DIR = join(import.meta.dir, "..", "data");
+// Store settings.json in %APPDATA%/Wall-E/ so it survives rebuilds
+const SETTINGS_DIR = join(process.env.APPDATA || join(import.meta.dir, "..", "data"), "Wall-E");
 const SETTINGS_PATH = join(SETTINGS_DIR, "settings.json");
+
 
 function readSettings(): Settings {
   try {
     if (existsSync(SETTINGS_PATH)) {
       const raw = readFileSync(SETTINGS_PATH, "utf-8");
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+      const parsed = JSON.parse(raw);
+      return { ...DEFAULT_SETTINGS, ...parsed };
     }
   } catch { /* ignore */ }
   return { ...DEFAULT_SETTINGS };
@@ -60,6 +64,39 @@ function writeSettings(settings: Settings): void {
   }
 }
 
+
+// ===== Auto-start (Windows Startup folder shortcut via PowerShell) =====
+const STARTUP_FOLDER = join(process.env.APPDATA || "", "Microsoft", "Windows", "Start Menu", "Programs", "Startup");
+const SHORTCUT_PATH = join(STARTUP_FOLDER, "Wall-E.lnk");
+const LAUNCHER_PATH = join(import.meta.dir, "..", "..", "bin", "launcher.exe");
+
+function getAutoStartEnabled(): boolean {
+  return existsSync(SHORTCUT_PATH);
+}
+
+async function setAutoStart(enabled: boolean): Promise<void> {
+  try {
+    if (enabled) {
+      // Create .lnk shortcut using PowerShell COM object
+      const ps = `$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('${SHORTCUT_PATH.replace(/'/g, "''")}'); $s.TargetPath = '${LAUNCHER_PATH.replace(/'/g, "''")}'; $s.WorkingDirectory = '${join(import.meta.dir, "..", "..", "bin").replace(/'/g, "''")}'; $s.Description = 'Wall-E School Dashboard'; $s.Save()`;
+      const proc = Bun.spawn(["powershell.exe", "-NoProfile", "-Command", ps], { stdio: ["ignore", "ignore", "ignore"] });
+      await proc.exited;
+    } else {
+      const { unlinkSync } = await import("node:fs");
+      if (existsSync(SHORTCUT_PATH)) {
+        unlinkSync(SHORTCUT_PATH);
+      }
+    }
+  } catch (err) {
+    console.warn("[autostart] error:", err);
+  }
+}
+
+// Register on first run (async, fire-and-forget)
+if (!getAutoStartEnabled()) {
+  setAutoStart(true);
+}
+
 // ===== NEIS API key (build-time injected) =====
 const ENV_NEIS_API_KEY: string = process.env.NEIS_API_KEY ?? "";
 
@@ -72,6 +109,8 @@ type WindowRPC = {
       closeWindow: { params: undefined; response: void };
       openSettings: { params: undefined; response: void };
       getSettings: { params: undefined; response: Settings & { neisApiKey: string } };
+      checkForUpdate: { params: undefined; response: UpdateCheckResult };
+      applyUpdate: { params: undefined; response: void };
     };
     messages: {};
   };
@@ -79,6 +118,7 @@ type WindowRPC = {
     requests: {};
     messages: {
       settingsChanged: Settings & { neisApiKey: string };
+      updateAvailable: { version: string; downloadUrl: string };
     };
   };
 };
@@ -91,6 +131,8 @@ type SettingsRPC = {
       getSettings: { params: undefined; response: Settings & { neisApiKey: string } };
       saveSettings: { params: Settings; response: void };
       pickAlarmFile: { params: undefined; response: { data: string; name: string } | null };
+      getAutoStart: { params: undefined; response: boolean };
+      setAutoStart: { params: { enabled: boolean }; response: void };
     };
     messages: {};
   };
@@ -151,6 +193,30 @@ function getSettingsWithKey(): Settings & { neisApiKey: string } {
   return { ...readSettings(), neisApiKey: ENV_NEIS_API_KEY };
 }
 
+// ===== Auto-Updater =====
+const APP_VERSION = "1.0.0"; // Kept in sync with electrobun.config.ts and package.json
+
+const autoUpdater = createAutoUpdater({
+  owner: "neohum",
+  repo: "wall-e",
+  currentVersion: APP_VERSION,
+  onUpdateAvailable: (result) => {
+    console.log(`[updater] Update available: v${result.latestVersion}`);
+    try {
+      mainWindow.webview.rpc.send.updateAvailable({
+        version: result.latestVersion,
+        downloadUrl: result.downloadUrl ?? "",
+      });
+    } catch (err) {
+      console.warn("[updater] Failed to notify webview:", err);
+    }
+  },
+});
+
+// Start periodic update checks (1 hour interval, initial check after 30s handled internally)
+autoUpdater.startPeriodicCheck(60 * 60 * 1000);
+console.log(`[updater] Auto-update checker started (current: v${APP_VERSION})`);
+
 // Define RPC for window controls
 const dashboardRPC = BrowserView.defineRPC<WindowRPC>({
   handlers: {
@@ -169,6 +235,17 @@ const dashboardRPC = BrowserView.defineRPC<WindowRPC>({
       },
       getSettings: () => {
         return getSettingsWithKey();
+      },
+      checkForUpdate: async () => {
+        return await autoUpdater.checkForUpdate();
+      },
+      applyUpdate: async () => {
+        console.log("[updater] User requested update, downloading...");
+        try {
+          await autoUpdater.downloadAndApply();
+        } catch (err) {
+          console.error("[updater] Update failed:", err);
+        }
       },
     },
   },
@@ -324,6 +401,12 @@ function openSettings() {
           writeSettings(settings);
           // Notify dashboard webview of settings change
           mainWindow.webview.rpc.send.settingsChanged(getSettingsWithKey());
+        },
+        getAutoStart: () => {
+          return getAutoStartEnabled();
+        },
+        setAutoStart: async (params: { enabled: boolean }) => {
+          await setAutoStart(params.enabled);
         },
         pickAlarmFile: async () => {
           const paths = await Utils.openFileDialog({

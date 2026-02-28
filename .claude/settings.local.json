@@ -36,7 +36,26 @@
       "Bash(bunx tsc:*)",
       "Bash(gh:*)",
       "Bash(makensis:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "WebFetch(domain:images.unsplash.com)",
+      "WebFetch(domain:source.unsplash.com)",
+      "Bash(cp:*)",
+      "Bash(cmd.exe:*)",
+      "Bash(reg query:*)",
+      "Bash(\"./build/dev-win-x64/Wall-E-dev/bin/launcher.exe\":*)",
+      "Bash(go mod:*)",
+      "Bash(go test:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vite:*)",
+      "Bash(go build:*)",
+      "Bash(wails dev:*)",
+      "Bash(python:*)",
+      "Bash(scoop list:*)",
+      "Bash(wails version:*)",
+      "Bash(wails build:*)",
+      "Bash(make dev:*)",
+      "Bash(make installer:*)"
     ]
   }
 }

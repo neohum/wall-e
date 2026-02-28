@@ -38,11 +38,29 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, #e8ecf4 0%, #dde4f0 100%);
+  background: var(--bg-image, none) center/cover no-repeat,
+              linear-gradient(135deg, #e8ecf4 0%, #dde4f0 100%);
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+.window-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(232, 236, 244, 0.55);
+  backdrop-filter: blur(18px);
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.window-frame > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* ===== Custom Titlebar ===== */

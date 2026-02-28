@@ -273,6 +273,68 @@ body {
 .top-bar__right .weather-info {
 }
 
+/* ===== Update Banner ===== */
+.update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: rgba(59, 130, 246, 0.12);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+  flex-shrink: 0;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.update-banner__text {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.update-banner__btn {
+  font-size: 0.8rem;
+  padding: 4px 14px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent-cyan);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.update-banner__btn:hover {
+  background: #2563eb;
+}
+
+.update-banner__btn:disabled {
+  background: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.update-banner__dismiss {
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 2px 6px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.update-banner__dismiss:hover {
+  color: var(--text-primary);
+}
+
 /* ===== Main Content ===== */
 .main-content {
   display: grid;

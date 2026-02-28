@@ -41,6 +41,8 @@ type WindowRPC = {
       closeWindow: { params: undefined; response: void };
       openSettings: { params: undefined; response: void };
       getSettings: { params: undefined; response: Settings };
+      checkForUpdate: { params: undefined; response: any };
+      applyUpdate: { params: undefined; response: void };
     };
     messages: {};
   };
@@ -48,6 +50,7 @@ type WindowRPC = {
     requests: {};
     messages: {
       settingsChanged: Settings;
+      updateAvailable: { version: string; downloadUrl: string };
     };
   };
 };
@@ -62,6 +65,9 @@ const rpc = Electroview.defineRPC<WindowRPC>({
         updateHeader();
         applyBackground(newSettings);
         loadDashboardData();
+      },
+      updateAvailable: (data: { version: string; downloadUrl: string }) => {
+        showUpdateBanner(data.version);
       },
     },
   },
@@ -94,6 +100,39 @@ const DEFAULT_SETTINGS: Settings = {
 
 function getSettings(): Settings {
   return cachedSettings ?? DEFAULT_SETTINGS;
+}
+
+// ===== Update Banner =====
+
+function showUpdateBanner(version: string): void {
+  const banner = document.getElementById("updateBanner");
+  const text = document.getElementById("updateBannerText");
+  if (!banner || !text) return;
+
+  text.textContent = `v${version} 업데이트가 있습니다`;
+  banner.style.display = "flex";
+
+  const btnUpdate = document.getElementById("btnUpdate");
+  const btnDismiss = document.getElementById("btnDismissUpdate");
+
+  btnUpdate?.addEventListener("click", async () => {
+    if (btnUpdate) {
+      btnUpdate.textContent = "업데이트 중...";
+      (btnUpdate as HTMLButtonElement).disabled = true;
+    }
+    try {
+      await rpc.request.applyUpdate();
+    } catch (err) {
+      console.error("Update failed:", err);
+      if (btnUpdate) {
+        btnUpdate.textContent = "업데이트 실패";
+      }
+    }
+  }, { once: true });
+
+  btnDismiss?.addEventListener("click", () => {
+    banner.style.display = "none";
+  }, { once: true });
 }
 
 // ===== Initialization =====
@@ -153,13 +192,16 @@ function applyBackground(settings: Settings): void {
   if (!frame) return;
 
   if (!settings.backgroundId) {
+    // Default: remove image overlay so CSS gradient shows
     frame.style.removeProperty("--bg-image");
     return;
   }
 
-  const url = `https://images.unsplash.com/photo-${settings.backgroundId}?w=1920&q=80&auto=format`;
+  // Use local image from views://bg/<filename>
+  const url = `views://bg/${settings.backgroundId}`;
   frame.style.setProperty("--bg-image", `url('${url}')`);
 }
+
 
 // ===== Clock =====
 

@@ -39,6 +39,8 @@ type SettingsRPC = {
       getSettings: { params: undefined; response: SettingsWithKey };
       saveSettings: { params: Settings; response: void };
       pickAlarmFile: { params: undefined; response: { data: string; name: string } | null };
+      getAutoStart: { params: undefined; response: boolean };
+      setAutoStart: { params: { enabled: boolean }; response: void };
     };
     messages: {};
   };
@@ -74,36 +76,41 @@ const DEFAULT_SETTINGS: Settings = {
 
 // ===== Background Presets =====
 
+const BG_BASE = "views://bg";
+
 interface BackgroundPreset {
-  id: string;   // Unsplash photo ID, "" = default gradient
+  id: string;       // unique key stored in settings (= filename)
   label: string;
+  fallback: string; // CSS gradient shown while/if image fails
 }
 
 const BACKGROUNDS: BackgroundPreset[] = [
-  { id: "", label: "기본" },
-  { id: "SmAi_Cme6jU", label: "청녹 마블" },
-  { id: "rlh8o7OaOU0", label: "블루-퍼플" },
-  { id: "lMq3sfMMViM", label: "블루-옐로우" },
-  { id: "RALqK3Vo_0g", label: "퍼플-화이트" },
-  { id: "RMNff5xIWDs", label: "블루-화이트" },
-  { id: "-ujJRILf3lU", label: "오렌지-그린-블루" },
-  { id: "CcOXh34BbkI", label: "레드-옐로우-블루" },
-  { id: "6dNt5M6fD9A", label: "블루-핑크-퍼플" },
-  { id: "-GsmIofI7OE", label: "베이지-브라운" },
-  { id: "Z1p1IVnDM2k", label: "오렌지-옐로우" },
-  { id: "Ye6swDS_yyk", label: "산과 호수" },
-  { id: "oQ7Y2-Gi-FI", label: "산 정상" },
-  { id: "muRjV3DCYZk", label: "계곡과 구름" },
-  { id: "gUMfgoMV5sM", label: "눈덮인 산" },
-  { id: "hBI6dqA6uv4", label: "설산 풍경" },
-  { id: "Flei7j6myc0", label: "초원과 산" },
-  { id: "8UD8HlJKVPY", label: "퍼플 석양" },
-  { id: "r8yzUfACOg0", label: "파스텔 구름" },
-  { id: "RPdV48lsDMo", label: "핑크 구름" },
-  { id: "52B664lcBQk", label: "핑크 석양 산" },
+  { id: "", label: "기본", fallback: "linear-gradient(135deg,#e8ecf4,#dde4f0)" },
+  { id: "a-tranquil-sailboat-gliding-across-the-calm-azure-2026-02-28-11-49-53-utc.jpg", label: "요트", fallback: "linear-gradient(135deg,#74b9ff,#0984e3)" },
+  { id: "aerial-view-of-a-serene-river-flowing-through-a-de-2026-02-28-11-49-53-utc.jpg", label: "강 항공뷰", fallback: "linear-gradient(135deg,#56ab2f,#2c3e50)" },
+  { id: "beautiful-morning-view-in-indonesia-panoramic-lan-2026-02-28-10-33-51-utc.jpg", label: "인도네시아 아침", fallback: "linear-gradient(135deg,#f9ca24,#f0932b)" },
+  { id: "blooming-cherry-blossom-tree-in-spring-with-delic-2026-02-28-12-45-10-utc.jpg", label: "벚꽃", fallback: "linear-gradient(135deg,#fbc2eb,#a18cd1)" },
+  { id: "bog-landscape-with-trees-in-swamp-and-mist-retro-2026-01-09-13-53-47-utc.jpg", label: "안개 숲", fallback: "linear-gradient(135deg,#bdc3c7,#636e72)" },
+  { id: "broken-brick-wall-urban-building-construction-2026-01-09-13-10-03-utc.jpg", label: "벽돌 벽", fallback: "linear-gradient(135deg,#b2773a,#6b3a2a)" },
+  { id: "cordillera-2026-01-07-00-20-41-utc.jpg", label: "산맥", fallback: "linear-gradient(135deg,#667eea,#2c3e50)" },
+  { id: "dark-thunderstorm-clouds-rainny-atmosphere-meteor-2026-02-01-06-07-56-utc.jpg", label: "폭풍 구름", fallback: "linear-gradient(135deg,#2d3436,#636e72)" },
+  { id: "golden-sunshine-sky-tropical-tree-fields-in-sunny-2026-01-25-03-30-41-utc.jpg", label: "황금빛 들판", fallback: "linear-gradient(135deg,#f9ca24,#56ab2f)" },
+  { id: "piano-keyboard-closeup-digital-image-2026-01-08-00-29-44-utc.jpg", label: "피아노", fallback: "linear-gradient(135deg,#2d3436,#b2bec3)" },
+  { id: "sand-beach-aerial-top-view-of-a-beautiful-sandy-b-2026-01-09-13-04-43-utc.jpg", label: "모래 해변", fallback: "linear-gradient(135deg,#f9ca24,#74b9ff)" },
+  { id: "wadi-rum-desert-jordan-stars-shine-over-desert-l-2026-01-20-23-17-14-utc.jpg", label: "사막의 별", fallback: "linear-gradient(135deg,#1a1a2e,#f9ca24)" },
 ];
 
 let selectedBackgroundId = "";
+
+function applyWindowBackground(bgId: string): void {
+  const frame = document.querySelector(".window-frame") as HTMLElement | null;
+  if (!frame) return;
+  if (!bgId) {
+    frame.style.removeProperty("--bg-image");
+  } else {
+    frame.style.setProperty("--bg-image", `url('${BG_BASE}/${bgId}')`);
+  }
+}
 
 // Cached settings (loaded from bun on init)
 let cachedSettings: SettingsWithKey | null = null;
@@ -132,17 +139,26 @@ function renderBackgroundPicker(): void {
     thumb.dataset.bgId = bg.id;
     thumb.title = bg.label;
 
+    // Always show fallback gradient first
+    thumb.style.background = bg.fallback;
+
     if (bg.id === "") {
       thumb.innerHTML = `<span>${bg.label}</span>`;
     } else {
-      const url = `https://images.unsplash.com/photo-${bg.id}?w=200&h=120&fit=crop&auto=format`;
-      thumb.innerHTML = `<img src="${url}" alt="${bg.label}" loading="lazy">`;
+      const img = document.createElement("img");
+      img.src = `${BG_BASE}/${bg.id}`;
+      img.alt = bg.label;
+      img.loading = "lazy";
+      img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;";
+      img.onerror = () => { img.style.display = "none"; };
+      thumb.appendChild(img);
     }
 
     thumb.addEventListener("click", () => {
       selectedBackgroundId = bg.id;
       grid.querySelectorAll(".bg-thumb").forEach((el) => el.classList.remove("selected"));
       thumb.classList.add("selected");
+      applyWindowBackground(bg.id);
     });
 
     grid.appendChild(thumb);
@@ -171,6 +187,7 @@ function loadFormValues(s: SettingsWithKey): void {
 
   // Background
   selectedBackgroundId = s.backgroundId || "";
+  applyWindowBackground(selectedBackgroundId);
   renderBackgroundPicker();
 }
 
@@ -421,6 +438,15 @@ async function init(): Promise<void> {
   cachedSettings = await rpc.request.getSettings();
   loadFormValues(cachedSettings);
 
+  // Load auto-start state
+  const autoStartCheckbox = document.getElementById("autoStart") as HTMLInputElement;
+  if (autoStartCheckbox) {
+    autoStartCheckbox.checked = await rpc.request.getAutoStart();
+    autoStartCheckbox.addEventListener("change", () => {
+      rpc.request.setAutoStart({ enabled: autoStartCheckbox.checked });
+    });
+  }
+
   // Close settings window
   document.getElementById("btnCloseSettings")?.addEventListener("click", () => {
     rpc.request.closeSettings();
@@ -493,7 +519,7 @@ async function init(): Promise<void> {
     if (pendingCustomAlarmData) {
       const audio = new Audio(pendingCustomAlarmData);
       audio.volume = 0.5;
-      audio.play().catch(() => {});
+      audio.play().catch(() => { });
     }
   });
 

@@ -28,6 +28,15 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .env.production.local
 .env.local
 
+# Wails migration build outputs
+wails-migration/build/bin/
+wails-migration/frontend/dist/
+wails-migration/frontend/node_modules/
+wails-migration/frontend/wailsjs/
+
+# Artifacts
+artifacts/
+
 # caches
 .eslintcache
 .cache
