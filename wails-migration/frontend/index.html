@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wall-E 학교 대시보드</title>
+  <link rel="icon" type="image/png" href="/assets/icon.png">
+  <link rel="stylesheet" href="/src/styles/dashboard.css">
+  <link rel="stylesheet" href="/src/styles/settings.css">
+</head>
+<body>
+  <div class="window-frame" id="windowFrame">
+  <!-- Custom Titlebar (frameless window drag region) -->
+  <header class="top-bar" id="titlebar" style="--wails-draggable: drag">
+    <div class="top-bar__left">
+      <img class="app-logo" src="/assets/icon.png" alt="Wall-E" width="28" height="28">
+      <div class="school-name" id="schoolName">학교 대시보드</div>
+      <div class="class-info" id="classInfo"></div>
+    </div>
+    <div class="top-bar__center">
+      <div class="datetime">
+        <span class="date" id="currentDate"></span>
+        <span class="time" id="currentTime"></span>
+      </div>
+    </div>
+    <div class="top-bar__right">
+      <div class="weather-info" id="weatherInfo">
+        <span class="weather-icon" id="weatherIcon"></span>
+        <span class="weather-temp" id="weatherTemp">--°C</span>
+      </div>
+      <div class="air-quality" id="airQuality">
+        <span class="pm-badge" id="pm10Badge">PM10 --</span>
+        <span class="pm-badge" id="pm25Badge">PM2.5 --</span>
+      </div>
+      <div class="class-status-badge" id="classStatus">로딩 중...</div>
+      <!-- Settings Button -->
+      <button class="settings-btn" id="btnSettings" title="설정" style="--wails-draggable: no-drag">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M6.5 1L6.15 2.65C5.75 2.8 5.38 3.01 5.05 3.27L3.45 2.65L1.95 5.35L3.3 6.45C3.27 6.63 3.25 6.81 3.25 7C3.25 7.19 3.27 7.37 3.3 7.55L1.95 8.65L3.45 11.35L5.05 10.73C5.38 10.99 5.75 11.2 6.15 11.35L6.5 13H9.5L9.85 11.35C10.25 11.2 10.62 10.99 10.95 10.73L12.55 11.35L14.05 8.65L12.7 7.55C12.73 7.37 12.75 7.19 12.75 7C12.75 6.81 12.73 6.63 12.7 6.45L14.05 5.35L12.55 2.65L10.95 3.27C10.62 3.01 10.25 2.8 9.85 2.65L9.5 1H6.5Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+          <circle cx="8" cy="7" r="2" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
+      </button>
+      <!-- Window Controls -->
+      <div class="window-controls" style="--wails-draggable: no-drag">
+        <button class="win-btn win-btn--minimize" id="btnMinimize" title="최소화">
+          <svg width="10" height="1" viewBox="0 0 10 1"><rect width="10" height="1" fill="currentColor"/></svg>
+        </button>
+        <button class="win-btn win-btn--maximize" id="btnMaximize" title="최대화">
+          <svg width="10" height="10" viewBox="0 0 10 10"><rect x="0.5" y="0.5" width="9" height="9" stroke="currentColor" fill="none" stroke-width="1"/></svg>
+        </button>
+        <button class="win-btn win-btn--close" id="btnClose" title="닫기">
+          <svg width="10" height="10" viewBox="0 0 10 10"><line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" stroke-width="1.2"/><line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" stroke-width="1.2"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content (Dashboard) -->
+  <main class="main-content" id="dashboardContent">
+    <!-- Timetable Column (50%) -->
+    <section class="panel timetable-panel">
+      <div class="panel__header">
+        <h2>시간표</h2>
+        <span class="panel__subtitle" id="timetableWeek"></span>
+      </div>
+      <div class="panel__body">
+        <table class="timetable" id="timetable">
+          <thead>
+            <tr>
+              <th class="period-col">교시</th>
+              <th>월</th>
+              <th>화</th>
+              <th>수</th>
+              <th>목</th>
+              <th>금</th>
+            </tr>
+          </thead>
+          <tbody id="timetableBody">
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Meals Column (25%) -->
+    <section class="panel meals-panel">
+      <div class="panel__header">
+        <h2>급식</h2>
+      </div>
+      <div class="panel__body" id="mealsContainer">
+        <div class="loading-placeholder">급식 정보를 불러오는 중...</div>
+      </div>
+    </section>
+
+    <!-- Events Column (25%) -->
+    <section class="panel events-panel">
+      <div class="panel__header">
+        <h2>학교 행사</h2>
+      </div>
+      <div class="panel__body" id="eventsContainer">
+        <div class="loading-placeholder">학사일정을 불러오는 중...</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== Settings Overlay ===== -->
+  <div class="settings-overlay" id="settingsOverlay">
+    <div class="settings-panel">
+      <header class="settings-titlebar">
+        <span class="settings-titlebar__title">설정</span>
+        <button class="settings-titlebar__close" id="btnCloseSettings" title="닫기">
+          <svg width="10" height="10" viewBox="0 0 10 10"><line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" stroke-width="1.2"/><line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" stroke-width="1.2"/></svg>
+        </button>
+      </header>
+      <div class="settings-container">
+        <!-- School Search Section -->
+        <section class="settings-section">
+          <h2>학교 정보</h2>
+          <div class="form-group">
+            <label for="schoolNameInput">학교 이름</label>
+            <div class="input-group">
+              <input type="text" id="schoolNameInput" placeholder="학교 이름을 입력하세요">
+              <button id="searchSchoolBtn" class="btn btn-primary">검색</button>
+            </div>
+          </div>
+          <div id="searchResults" class="search-results" style="display:none;"></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="officeCode">교육청 코드</label>
+              <input type="text" id="officeCode" readonly placeholder="자동 입력">
+            </div>
+            <div class="form-group">
+              <label for="schoolCode">학교 코드</label>
+              <input type="text" id="schoolCode" readonly placeholder="자동 입력">
+            </div>
+          </div>
+        </section>
+
+        <!-- Class Info Section -->
+        <section class="settings-section">
+          <h2>학년 / 반</h2>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="grade">학년</label>
+              <select id="grade">
+                <option value="" selected disabled>선택</option>
+                <option value="1">1학년</option>
+                <option value="2">2학년</option>
+                <option value="3">3학년</option>
+                <option value="4">4학년</option>
+                <option value="5">5학년</option>
+                <option value="6">6학년</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="classNum">반</label>
+              <select id="classNum">
+                <option value="" selected disabled>선택</option>
+                <option value="1">1반</option>
+                <option value="2">2반</option>
+                <option value="3">3반</option>
+                <option value="4">4반</option>
+                <option value="5">5반</option>
+                <option value="6">6반</option>
+                <option value="7">7반</option>
+                <option value="8">8반</option>
+                <option value="9">9반</option>
+                <option value="10">10반</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- Location Section -->
+        <section class="settings-section">
+          <h2>위치 (날씨 API)</h2>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="latitude">위도</label>
+              <input type="number" id="latitude" step="0.0001" readonly>
+            </div>
+            <div class="form-group">
+              <label for="longitude">경도</label>
+              <input type="number" id="longitude" step="0.0001" readonly>
+            </div>
+          </div>
+          <small>학교 선택 시 주소 기반으로 자동 설정됩니다</small>
+        </section>
+
+        <!-- Timetable Source Section -->
+        <section class="settings-section">
+          <h2>
+            시간표 데이터 소스
+            <button class="help-btn" id="btnHelp" title="스프레드시트 설정 가이드">?</button>
+          </h2>
+          <div class="form-group">
+            <label for="spreadsheetUrl">Google 스프레드시트 URL</label>
+            <input type="url" id="spreadsheetUrl" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
+            <small>스프레드시트를 "링크가 있는 모든 사용자"로 공유 설정 필요</small>
+          </div>
+        </section>
+
+        <!-- Background Section -->
+        <section class="settings-section">
+          <h2>배경</h2>
+          <div class="bg-grid" id="backgroundGrid"></div>
+        </section>
+
+        <!-- Alarm Section -->
+        <section class="settings-section">
+          <h2>알림음</h2>
+          <div class="form-group checkbox-group">
+            <label class="toggle-label">
+              <input type="checkbox" id="alarmEnabled" checked>
+              <span class="toggle-switch"></span>
+              <span>수업 알림음 활성화</span>
+            </label>
+            <small>수업 시작/종료/1분전 알림음을 재생합니다</small>
+          </div>
+          <div class="form-group alarm-sound-group" id="alarmSoundGroup">
+            <label class="alarm-sound-label">알림음 선택</label>
+            <div class="alarm-preset-list">
+              <label class="alarm-preset-item">
+                <input type="radio" name="alarmSound" value="classic" checked>
+                <span class="alarm-preset-name">기본 (클래식)</span>
+                <button type="button" class="btn-preview" data-preset="classic" title="미리듣기">&#9654;</button>
+              </label>
+              <label class="alarm-preset-item">
+                <input type="radio" name="alarmSound" value="chime">
+                <span class="alarm-preset-name">차임벨</span>
+                <button type="button" class="btn-preview" data-preset="chime" title="미리듣기">&#9654;</button>
+              </label>
+              <label class="alarm-preset-item">
+                <input type="radio" name="alarmSound" value="soft">
+                <span class="alarm-preset-name">부드러운</span>
+                <button type="button" class="btn-preview" data-preset="soft" title="미리듣기">&#9654;</button>
+              </label>
+              <label class="alarm-preset-item">
+                <input type="radio" name="alarmSound" value="digital">
+                <span class="alarm-preset-name">디지털</span>
+                <button type="button" class="btn-preview" data-preset="digital" title="미리듣기">&#9654;</button>
+              </label>
+              <label class="alarm-preset-item">
+                <input type="radio" name="alarmSound" value="melody">
+                <span class="alarm-preset-name">멜로디</span>
+                <button type="button" class="btn-preview" data-preset="melody" title="미리듣기">&#9654;</button>
+              </label>
+              <label class="alarm-preset-item alarm-preset-custom">
+                <input type="radio" name="alarmSound" value="custom">
+                <span class="alarm-preset-name">직접 선택</span>
+                <button type="button" class="btn-pick-file" id="btnPickAlarmFile" title="파일 선택">파일 선택</button>
+              </label>
+              <div class="custom-alarm-info" id="customAlarmInfo" style="display:none;">
+                <span class="custom-alarm-filename" id="customAlarmName"></span>
+                <button type="button" class="btn-preview" id="btnPreviewCustom" title="미리듣기">&#9654;</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Startup Section -->
+        <section class="settings-section">
+          <h2>시스템</h2>
+          <div class="form-group checkbox-group">
+            <label class="toggle-label">
+              <input type="checkbox" id="autoStart" checked>
+              <span class="toggle-switch"></span>
+              <span>컴퓨터 시작 시 자동 실행</span>
+            </label>
+            <small>Windows 시작 시 Wall-E가 자동으로 실행됩니다</small>
+          </div>
+        </section>
+
+        <!-- Actions -->
+        <div class="settings-actions">
+          <button id="saveBtn" class="btn btn-primary btn-large">저장</button>
+          <button id="resetBtn" class="btn btn-secondary">초기화</button>
+        </div>
+        <div id="statusMessage" class="status-message" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help Modal -->
+  <div class="help-overlay" id="helpOverlay">
+    <div class="help-modal">
+      <div class="help-modal__header">
+        <h3>스프레드시트 설정 가이드</h3>
+        <button class="help-modal__close" id="btnCloseHelp">
+          <svg width="10" height="10" viewBox="0 0 10 10"><line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" stroke-width="1.5"/><line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" stroke-width="1.5"/></svg>
+        </button>
+      </div>
+      <div class="help-modal__body">
+        <div class="help-step">
+          <div class="help-step__number">1</div>
+          <div class="help-step__content">
+            <h4>Google 스프레드시트 생성</h4>
+            <p><a href="https://sheets.new" target="_blank">sheets.new</a>에서 새 스프레드시트를 만들고, 시트 탭 2개를 생성하세요.</p>
+          </div>
+        </div>
+        <div class="help-step">
+          <div class="help-step__number">2</div>
+          <div class="help-step__content">
+            <h4>시간표 시트 (첫 번째 탭)</h4>
+            <p>첫 번째 시트 이름은 자유이며, 아래 형식으로 입력하세요:</p>
+            <div class="help-table-wrap">
+              <table class="help-table">
+                <thead><tr><th>교시</th><th>시작</th><th>종료</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th></tr></thead>
+                <tbody>
+                  <tr><td>1</td><td>09:00</td><td>09:40</td><td>국어</td><td>수학</td><td>영어</td><td>과학</td><td>국어</td></tr>
+                  <tr><td>2</td><td>09:50</td><td>10:30</td><td>수학</td><td>국어</td><td>수학</td><td>사회</td><td>영어</td></tr>
+                  <tr><td>3</td><td>10:40</td><td>11:20</td><td>체육</td><td>영어</td><td>국어</td><td>도덕</td><td>수학</td></tr>
+                  <tr class="help-table__more"><td colspan="8">...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="help-step">
+          <div class="help-step__number">3</div>
+          <div class="help-step__content">
+            <h4>행사 시트 (두 번째 탭)</h4>
+            <p>시트 이름을 반드시 <strong>"행사"</strong>로 지정하고, 아래 형식으로 입력하세요:</p>
+            <div class="help-table-wrap">
+              <table class="help-table">
+                <thead><tr><th>날짜</th><th>행사명</th><th>상세내용</th></tr></thead>
+                <tbody>
+                  <tr><td>2026-03-02</td><td>개학식</td><td>1학기 시업식</td></tr>
+                  <tr><td>2026-03-15</td><td>학부모 상담주간</td><td></td></tr>
+                  <tr><td>2026-04-10</td><td>현장체험학습</td><td>경주</td></tr>
+                  <tr class="help-table__more"><td colspan="3">...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="help-note">날짜는 <code>YYYY-MM-DD</code>, <code>YYYY.MM.DD</code>, <code>YYYY/MM/DD</code> 형식 모두 지원됩니다.</p>
+            <p class="help-note">상세내용 열은 비워둬도 됩니다. NEIS 학사일정과 자동으로 병합됩니다.</p>
+          </div>
+        </div>
+        <div class="help-step">
+          <div class="help-step__number">4</div>
+          <div class="help-step__content">
+            <h4>공유 설정</h4>
+            <p>스프레드시트 우측 상단 <strong>"공유"</strong> 버튼을 클릭한 뒤:</p>
+            <div class="help-share-guide">
+              <div class="help-share-step">일반 액세스 → <strong>"링크가 있는 모든 사용자"</strong></div>
+              <div class="help-share-step">역할 → <strong>"뷰어"</strong></div>
+            </div>
+            <p>그 후 URL을 복사하여 위 입력란에 붙여넣으세요.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
