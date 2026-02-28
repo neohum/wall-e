@@ -6,8 +6,8 @@ out
 dist
 *.tgz
 
-# build output
-build/
+# build output (Electrobun)
+/build/
 
 # installer output
 installer/*.exe
@@ -30,6 +30,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Wails migration build outputs
 wails-migration/build/bin/
+wails-migration/build/windows/installer/tmp/
 wails-migration/frontend/dist/
 wails-migration/frontend/node_modules/
 wails-migration/frontend/wailsjs/
