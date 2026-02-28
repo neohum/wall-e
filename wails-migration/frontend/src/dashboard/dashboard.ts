@@ -5,6 +5,7 @@ import type { Settings, DashboardData, MealData, ScheduleEvent } from "../types"
 import {
   getPeriods,
   getSubjects,
+  getHeaders,
   getCurrentPeriodStatus,
   renderTimetable,
   getStatusBadgeClass,
@@ -238,15 +239,17 @@ function updateTimetable(): void {
   const tableBody = document.getElementById("timetableBody");
   if (!tableBody) return;
 
-  const periods = getPeriods(dashboardData?.timetable ?? null);
-  const subjects = getSubjects(dashboardData?.timetable ?? null);
+  const timetable = dashboardData?.timetable ?? null;
+  const periods = getPeriods(timetable);
+  const subjects = getSubjects(timetable);
+  const headers = getHeaders(timetable);
   const now = new Date();
   const status = getCurrentPeriodStatus(periods, now);
 
   const jsDay = now.getDay();
   const todayIdx = jsDay >= 1 && jsDay <= 5 ? jsDay - 1 : -1;
 
-  renderTimetable(tableBody, subjects, periods, status, todayIdx);
+  renderTimetable(tableBody, subjects, periods, status, todayIdx, headers);
 
   const statusEl = $("#classStatus");
   if (statusEl) {
@@ -342,6 +345,113 @@ function updateEvents(): void {
   }
 }
 
+// ===== Study Plan =====
+
+let studyPlanIndex = 0;
+let studyPlanNavSetup = false;
+
+function setupStudyPlanNav(): void {
+  if (studyPlanNavSetup) return;
+  studyPlanNavSetup = true;
+
+  document.getElementById("studyPlanPrev")?.addEventListener("click", () => {
+    const result = dashboardData?.studyPlan;
+    if (!result || result.blocks.length === 0) return;
+    if (studyPlanIndex > 0) {
+      studyPlanIndex--;
+      renderStudyPlanBlock();
+    }
+  });
+
+  document.getElementById("studyPlanNext")?.addEventListener("click", () => {
+    const result = dashboardData?.studyPlan;
+    if (!result || result.blocks.length === 0) return;
+    if (studyPlanIndex < result.blocks.length - 1) {
+      studyPlanIndex++;
+      renderStudyPlanBlock();
+    }
+  });
+}
+
+function updateStudyPlan(): void {
+  setupStudyPlanNav();
+
+  const container = document.getElementById("studyPlanContainer");
+  if (!container) return;
+  container.style.display = "";
+
+  const result = dashboardData?.studyPlan ?? null;
+  if (!result || result.blocks.length === 0) {
+    const contentEl = document.getElementById("studyPlanContent");
+    const titleEl = document.getElementById("studyPlanTitle");
+    if (contentEl) contentEl.innerHTML = '<div class="loading-placeholder">주학습계획안이 없습니다</div>';
+    if (titleEl) titleEl.textContent = "주학습계획안";
+    updateStudyPlanNavButtons();
+    return;
+  }
+
+  // Set to current week index
+  studyPlanIndex = result.currentIndex >= 0 ? result.currentIndex : 0;
+  renderStudyPlanBlock();
+}
+
+function renderStudyPlanBlock(): void {
+  const contentEl = document.getElementById("studyPlanContent");
+  const titleEl = document.getElementById("studyPlanTitle");
+  if (!contentEl) return;
+
+  const result = dashboardData?.studyPlan;
+  if (!result || studyPlanIndex < 0 || studyPlanIndex >= result.blocks.length) return;
+
+  const block = result.blocks[studyPlanIndex];
+  const isCurrent = studyPlanIndex === result.currentIndex;
+
+  if (titleEl) titleEl.textContent = block.title || "주학습계획안";
+
+  // Highlight today's column only if viewing the current week
+  const now = new Date();
+  const jsDay = now.getDay();
+  const dayMap: Record<string, number> = {
+    "일": 0, "월": 1, "화": 2, "수": 3, "목": 4, "금": 5, "토": 6,
+    "일요일": 0, "월요일": 1, "화요일": 2, "수요일": 3, "목요일": 4, "금요일": 5, "토요일": 6,
+  };
+  const todayDayIdx = isCurrent ? block.headers.findIndex((h) => dayMap[h] === jsDay) : -1;
+
+  let html = '<table class="study-plan-table"><thead><tr>';
+  html += `<th class="period-col"></th>`;
+  block.headers.forEach((h, i) => {
+    const cls = i === todayDayIdx ? ' class="today-col"' : "";
+    html += `<th${cls}>${h}</th>`;
+  });
+  html += "</tr></thead><tbody>";
+
+  for (const row of block.rows) {
+    html += "<tr>";
+    html += `<td class="period-num">${row[0]}</td>`;
+    for (let i = 1; i < block.headers.length + 1; i++) {
+      const cls = i - 1 === todayDayIdx ? ' class="today-col"' : "";
+      const cell = (row[i] ?? "").replace(/\n/g, "<br>");
+      html += `<td${cls}>${cell}</td>`;
+    }
+    html += "</tr>";
+  }
+
+  html += "</tbody></table>";
+  contentEl.innerHTML = html;
+
+  updateStudyPlanNavButtons();
+}
+
+function updateStudyPlanNavButtons(): void {
+  const prevBtn = document.getElementById("studyPlanPrev") as HTMLButtonElement | null;
+  const nextBtn = document.getElementById("studyPlanNext") as HTMLButtonElement | null;
+  const result = dashboardData?.studyPlan;
+  const total = result?.blocks.length ?? 0;
+
+  if (prevBtn) prevBtn.disabled = studyPlanIndex <= 0;
+  if (nextBtn) nextBtn.disabled = studyPlanIndex >= total - 1;
+}
+
 // ===== Data Loading =====
 
 async function loadDashboardData(): Promise<void> {
@@ -353,6 +463,7 @@ async function loadDashboardData(): Promise<void> {
     updateTimetable();
     updateMeals();
     updateEvents();
+    updateStudyPlan();
   } catch (err) {
     console.error("Failed to load dashboard data:", err);
   }

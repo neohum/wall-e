@@ -57,29 +57,41 @@
 
   <!-- Main Content (Dashboard) -->
   <main class="main-content" id="dashboardContent">
-    <!-- Timetable Column (50%) -->
-    <section class="panel timetable-panel">
-      <div class="panel__header">
-        <h2>시간표</h2>
-        <span class="panel__subtitle" id="timetableWeek"></span>
-      </div>
-      <div class="panel__body">
-        <table class="timetable" id="timetable">
-          <thead>
-            <tr>
-              <th class="period-col">교시</th>
-              <th>월</th>
-              <th>화</th>
-              <th>수</th>
-              <th>목</th>
-              <th>금</th>
-            </tr>
-          </thead>
-          <tbody id="timetableBody">
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <!-- Left Column: Timetable + Study Plan stacked -->
+    <div class="left-column">
+      <!-- Timetable (shrink to content) -->
+      <section class="panel timetable-panel">
+        <div class="panel__header">
+          <h2>시간표</h2>
+          <span class="panel__subtitle" id="timetableWeek"></span>
+        </div>
+        <div class="panel__body">
+          <table class="timetable" id="timetable">
+            <thead id="timetableHead">
+            </thead>
+            <tbody id="timetableBody">
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Study Plan (separate card, hidden when empty) -->
+      <section class="panel study-plan-panel" id="studyPlanContainer">
+        <div class="panel__header">
+          <div class="study-plan-nav">
+            <button class="study-plan-nav__btn" id="studyPlanPrev" title="이전 주">
+              <svg width="12" height="12" viewBox="0 0 12 12"><polyline points="8,1 3,6 8,11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <h2 id="studyPlanTitle">주학습계획안</h2>
+            <button class="study-plan-nav__btn" id="studyPlanNext" title="다음 주">
+              <svg width="12" height="12" viewBox="0 0 12 12"><polyline points="4,1 9,6 4,11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="panel__body" id="studyPlanContent">
+        </div>
+      </section>
+    </div>
 
     <!-- Meals Column (25%) -->
     <section class="panel meals-panel">
@@ -294,7 +306,7 @@
           <div class="help-step__number">1</div>
           <div class="help-step__content">
             <h4>Google 스프레드시트 생성</h4>
-            <p><a href="https://sheets.new" target="_blank">sheets.new</a>에서 새 스프레드시트를 만들고, 시트 탭 2개를 생성하세요.</p>
+            <p><a href="https://sheets.new" target="_blank">sheets.new</a>에서 새 스프레드시트를 만들고, 시트 탭 2~3개를 생성하세요.</p>
           </div>
         </div>
         <div class="help-step">
@@ -333,6 +345,29 @@
             </div>
             <p class="help-note">날짜는 <code>YYYY-MM-DD</code>, <code>YYYY.MM.DD</code>, <code>YYYY/MM/DD</code> 형식 모두 지원됩니다.</p>
             <p class="help-note">상세내용 열은 비워둬도 됩니다. NEIS 학사일정과 자동으로 병합됩니다.</p>
+          </div>
+        </div>
+        <div class="help-step">
+          <div class="help-step__number">3-2</div>
+          <div class="help-step__content">
+            <h4>주학습계획안 시트 (세 번째 탭, 선택)</h4>
+            <p>시트 이름을 반드시 <strong>"주학습계획안"</strong>으로 지정하고, 아래 형식으로 입력하세요:</p>
+            <div class="help-table-wrap">
+              <table class="help-table">
+                <tbody>
+                  <tr><td colspan="6"><strong>2026-03-02</strong></td></tr>
+                  <tr><td>교시</td><td>월</td><td>화</td><td>수</td><td>목</td><td>금</td></tr>
+                  <tr><td>1</td><td>국어</td><td>수학</td><td>영어</td><td>과학</td><td>국어</td></tr>
+                  <tr><td>2</td><td>수학</td><td>국어</td><td>수학</td><td>사회</td><td>영어</td></tr>
+                  <tr class="help-table__more"><td colspan="6">...</td></tr>
+                  <tr><td colspan="6"><strong>2026-03-09</strong></td></tr>
+                  <tr><td>교시</td><td>월</td><td>화</td><td>수</td><td>목</td><td>금</td></tr>
+                  <tr class="help-table__more"><td colspan="6">...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="help-note">날짜 행 아래에 시간표와 같은 형식(교시/요일)으로 학습 내용을 입력합니다.</p>
+            <p class="help-note">날짜 블록이 반복되며, 오늘 날짜가 포함된 블록이 자동으로 표시됩니다.</p>
           </div>
         </div>
         <div class="help-step">

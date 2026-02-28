@@ -41,6 +41,8 @@ type SettingsRPC = {
       pickAlarmFile: { params: undefined; response: { data: string; name: string } | null };
       getAutoStart: { params: undefined; response: boolean };
       setAutoStart: { params: { enabled: boolean }; response: void };
+      searchSchool: { params: { schoolName: string }; response: SchoolInfo[] };
+      geocodeAddress: { params: { address: string }; response: { lat: number; lon: number } | null };
     };
     messages: {};
   };
@@ -212,42 +214,24 @@ function collectFormValues(): Settings {
   };
 }
 
-// ===== Address Geocoding (Nominatim / OpenStreetMap) =====
+// ===== School Search & Geocoding (via bun RPC) =====
 
-async function geocodeAddress(address: string): Promise<{ lat: number; lon: number } | null> {
+async function searchSchool(schoolName: string): Promise<SchoolInfo[]> {
+  if (!schoolName) return [];
   try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&countrycodes=kr`;
-    const res = await fetch(url, {
-      headers: { "Accept-Language": "ko" },
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!Array.isArray(data) || data.length === 0) return null;
-    return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-  } catch {
-    return null;
+    return await rpc.request.searchSchool({ schoolName });
+  } catch (err) {
+    console.error("searchSchool RPC error:", err);
+    return [];
   }
 }
 
-// ===== School Search =====
-
-async function searchSchool(apiKey: string, schoolName: string): Promise<SchoolInfo[]> {
-  if (!apiKey || !schoolName) return [];
+async function geocodeAddress(address: string): Promise<{ lat: number; lon: number } | null> {
   try {
-    const url = `https://open.neis.go.kr/hub/schoolInfo?KEY=${apiKey}&SCHUL_NM=${encodeURIComponent(schoolName)}&Type=json`;
-    const res = await fetch(url);
-    if (!res.ok) return [];
-    const data = await res.json();
-    const rows = data?.schoolInfo?.[1]?.row;
-    if (!Array.isArray(rows)) return [];
-    return rows.map((row: any) => ({
-      schoolCode: row.SD_SCHUL_CODE,
-      officeCode: row.ATPT_OFCDC_SC_CODE,
-      schoolName: row.SCHUL_NM,
-      address: row.ORG_RDNMA,
-    }));
-  } catch {
-    return [];
+    return await rpc.request.geocodeAddress({ address });
+  } catch (err) {
+    console.error("geocodeAddress RPC error:", err);
+    return null;
   }
 }
 
@@ -466,13 +450,8 @@ async function init(): Promise<void> {
 
   // Search school
   document.getElementById("searchSchoolBtn")!.addEventListener("click", async () => {
-    const apiKey = cachedSettings?.neisApiKey || "";
     const schoolName = $("schoolNameInput").value.trim();
 
-    if (!apiKey) {
-      showStatus("NEIS API 키가 설정되지 않았습니다 (.env 파일 확인)", "error");
-      return;
-    }
     if (!schoolName) {
       showStatus("학교 이름을 입력하세요", "error");
       return;
@@ -482,7 +461,7 @@ async function init(): Promise<void> {
     btn.textContent = "검색 중...";
     btn.disabled = true;
 
-    const results = await searchSchool(apiKey, schoolName);
+    const results = await searchSchool(schoolName);
     renderSearchResults(results);
 
     btn.textContent = "검색";

@@ -268,13 +268,18 @@ export function shouldPlayAlarm(key: string): boolean {
   return true;
 }
 
+export interface AlarmEvent {
+  period: number;
+  type: AlarmType;
+}
+
 export function checkAndPlayAlarms(
   periods: Array<{ period: number; start: string; end: string }>,
   enabled: boolean,
   alarmSound: string = "classic",
   customAlarmData: string = "",
-): void {
-  if (!enabled) return;
+): AlarmEvent | null {
+  if (!enabled) return null;
 
   const now = new Date();
   const h = now.getHours();
@@ -283,7 +288,7 @@ export function checkAndPlayAlarms(
   const currentMinutes = h * 60 + m;
 
   // Only trigger at the start of each minute (first 2 seconds)
-  if (s > 2) return;
+  if (s > 2) return null;
 
   for (const p of periods) {
     const [startH, startM] = p.start.split(":").map(Number);
@@ -300,6 +305,7 @@ export function checkAndPlayAlarms(
         } else {
           playPresetAlarm(alarmSound, "warning");
         }
+        return { period: p.period, type: "warning" };
       }
     }
 
@@ -312,6 +318,7 @@ export function checkAndPlayAlarms(
         } else {
           playPresetAlarm(alarmSound, "start");
         }
+        return { period: p.period, type: "start" };
       }
     }
 
@@ -324,9 +331,12 @@ export function checkAndPlayAlarms(
         } else {
           playPresetAlarm(alarmSound, "end");
         }
+        return { period: p.period, type: "end" };
       }
     }
   }
+
+  return null;
 }
 
 // Reset played alarms daily at midnight

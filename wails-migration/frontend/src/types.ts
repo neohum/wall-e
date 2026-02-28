@@ -42,6 +42,7 @@ export interface ScheduleEvent {
 }
 
 export interface TimetableData {
+  headers: string[];
   periods: PeriodTime[];
   subjects: string[][];
 }
@@ -52,12 +53,24 @@ export interface PeriodTime {
   end: string;
 }
 
+export interface StudyPlanBlock {
+  title: string;
+  headers: string[];
+  rows: string[][];
+}
+
+export interface StudyPlanResult {
+  blocks: StudyPlanBlock[];
+  currentIndex: number;
+}
+
 export interface DashboardData {
   weather: WeatherData | null;
   airQuality: AirQualityData | null;
   meals: MealData[];
   events: ScheduleEvent[];
   timetable: TimetableData | null;
+  studyPlan: StudyPlanResult | null;
 }
 
 export interface SchoolInfo {

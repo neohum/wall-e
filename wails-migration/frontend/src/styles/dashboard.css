@@ -278,6 +278,37 @@ body {
   overflow: hidden;
 }
 
+/* Left column: timetable + study plan stacked */
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.left-column::-webkit-scrollbar {
+  width: 4px;
+}
+.left-column::-webkit-scrollbar-track {
+  background: transparent;
+}
+.left-column::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 2px;
+}
+
+/* Timetable panel: shrink to content */
+.left-column .timetable-panel {
+  flex-shrink: 0;
+}
+
+/* Study plan panel: fills remaining space */
+.left-column .study-plan-panel {
+  flex: 1;
+  min-height: 0;
+}
+
 /* ===== Panel ===== */
 .panel {
   background: var(--bg-panel);
@@ -357,7 +388,19 @@ body {
 }
 
 .timetable th.period-col {
-  width: 60px;
+  width: 40px;
+}
+
+.timetable th.time-col {
+  width: 50px;
+  text-align: center;
+}
+
+.timetable td.time-col {
+  width: 50px;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  text-align: center;
 }
 
 .timetable td {
@@ -396,11 +439,99 @@ body {
   font-size: 0.85rem;
 }
 
-.timetable td.period-time {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  display: block;
-  margin-top: 2px;
+
+/* ===== Study Plan Navigation ===== */
+.study-plan-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.study-plan-nav h2 {
+  flex: 1;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.study-plan-nav__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.study-plan-nav__btn:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-cyan);
+}
+
+.study-plan-nav__btn:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+.study-plan-nav__btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* ===== Study Plan Table ===== */
+.study-plan-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.study-plan-table th,
+.study-plan-table td {
+  padding: 8px 6px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  font-size: 0.82rem;
+  vertical-align: top;
+}
+
+.study-plan-table th {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent-cyan);
+  font-weight: 700;
+  font-size: 0.78rem;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.study-plan-table th.period-col {
+  width: 40px;
+}
+
+.study-plan-table td.period-num {
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.study-plan-table th.today-col,
+.study-plan-table td.today-col {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.study-plan-table td {
+  color: var(--text-primary);
+  line-height: 1.5;
 }
 
 /* ===== Meals ===== */
@@ -543,7 +674,7 @@ body {
     grid-template-columns: 1fr 1fr;
   }
 
-  .timetable-panel {
+  .left-column {
     grid-column: 1 / -1;
   }
 }

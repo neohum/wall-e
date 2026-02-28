@@ -342,8 +342,8 @@ func TestCsvToTimetableData_InvalidTimeNoColon_SkipsRow(t *testing.T) {
 	}
 }
 
-func TestCsvToTimetableData_FewerThanFiveDayColumns_PaddedWithEmpty(t *testing.T) {
-	// Only 2 day columns provided; remaining 3 should be empty strings.
+func TestCsvToTimetableData_FewerThanFiveDayColumns_DynamicHeaders(t *testing.T) {
+	// Only 2 day columns provided; should create exactly 2 columns (dynamic headers).
 	rows := [][]string{
 		{"period", "start", "end", "mon", "tue"},
 		{"1", "09:00", "09:40", "수학", "영어"},
@@ -352,15 +352,18 @@ func TestCsvToTimetableData_FewerThanFiveDayColumns_PaddedWithEmpty(t *testing.T
 	if data == nil {
 		t.Fatal("expected non-nil TimetableData")
 	}
+	if len(data.Headers) != 2 {
+		t.Fatalf("expected 2 headers, got %d: %v", len(data.Headers), data.Headers)
+	}
+	if data.Headers[0] != "mon" || data.Headers[1] != "tue" {
+		t.Errorf("unexpected headers: %v", data.Headers)
+	}
 	subjects := data.Subjects[0]
-	if len(subjects) != 5 {
-		t.Fatalf("expected 5 subject slots, got %d", len(subjects))
+	if len(subjects) != 2 {
+		t.Fatalf("expected 2 subject slots, got %d", len(subjects))
 	}
 	if subjects[0] != "수학" || subjects[1] != "영어" {
 		t.Errorf("unexpected subjects: %v", subjects)
-	}
-	if subjects[2] != "" || subjects[3] != "" || subjects[4] != "" {
-		t.Errorf("expected empty strings for missing day columns, got %v", subjects[2:])
 	}
 }
 

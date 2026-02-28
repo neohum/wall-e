@@ -18,9 +18,14 @@ export function getPeriods(timetable: TimetableData | null): PeriodTime[] {
   return timetable?.periods ?? DEFAULT_PERIODS;
 }
 
+export function getHeaders(timetable: TimetableData | null): string[] {
+  return timetable?.headers ?? ["월", "화", "수", "목", "금"];
+}
+
 export function getSubjects(timetable: TimetableData | null): string[][] {
   if (timetable?.subjects) return timetable.subjects;
-  return Array.from({ length: 6 }, () => Array(5).fill(""));
+  const numCols = timetable?.headers?.length ?? 5;
+  return Array.from({ length: 6 }, () => Array(numCols).fill(""));
 }
 
 export function getCurrentPeriodStatus(periods: PeriodTime[], now: Date): PeriodStatus {
@@ -125,8 +130,41 @@ export function renderTimetable(
   subjects: string[][],
   periods: PeriodTime[],
   status: PeriodStatus,
-  todayDayIndex: number
+  todayDayIndex: number,
+  headers: string[]
 ): void {
+  // Render thead dynamically
+  const thead = document.getElementById("timetableHead");
+  if (thead) {
+    thead.innerHTML = "";
+    const headRow = document.createElement("tr");
+
+    const thPeriod = document.createElement("th");
+    thPeriod.className = "period-col";
+    thPeriod.textContent = "교시";
+    headRow.appendChild(thPeriod);
+
+    const thStart = document.createElement("th");
+    thStart.className = "time-col";
+    thStart.textContent = "시작";
+    headRow.appendChild(thStart);
+
+    const thEnd = document.createElement("th");
+    thEnd.className = "time-col";
+    thEnd.textContent = "종료";
+    headRow.appendChild(thEnd);
+
+    for (let d = 0; d < headers.length; d++) {
+      const th = document.createElement("th");
+      th.textContent = headers[d];
+      if (d === todayDayIndex) th.classList.add("today-col");
+      headRow.appendChild(th);
+    }
+
+    thead.appendChild(headRow);
+  }
+
+  // Render tbody
   tableBody.innerHTML = "";
 
   for (let i = 0; i < periods.length; i++) {
@@ -141,10 +179,20 @@ export function renderTimetable(
 
     const periodCell = document.createElement("td");
     periodCell.classList.add("period-num");
-    periodCell.innerHTML = `${p.period}<span class="period-time">${p.start}</span>`;
+    periodCell.textContent = String(p.period);
     row.appendChild(periodCell);
 
-    for (let day = 0; day < 5; day++) {
+    const startCell = document.createElement("td");
+    startCell.classList.add("time-col");
+    startCell.textContent = p.start;
+    row.appendChild(startCell);
+
+    const endCell = document.createElement("td");
+    endCell.classList.add("time-col");
+    endCell.textContent = p.end;
+    row.appendChild(endCell);
+
+    for (let day = 0; day < headers.length; day++) {
       const cell = document.createElement("td");
       const subject = subjects[i]?.[day] ?? "";
       cell.textContent = subject || "-";
@@ -155,14 +203,6 @@ export function renderTimetable(
 
     tableBody.appendChild(row);
   }
-
-  const headers = document.querySelectorAll(".timetable thead th");
-  headers.forEach((th, idx) => {
-    th.classList.remove("today-col");
-    if (idx === todayDayIndex + 1 && todayDayIndex >= 0) {
-      th.classList.add("today-col");
-    }
-  });
 }
 
 export function getStatusBadgeClass(status: PeriodStatus): string {

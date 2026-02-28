@@ -50,6 +50,7 @@ type DashboardData struct {
 	Meals      []MealData      `json:"meals"`
 	Events     []ScheduleEvent `json:"events"`
 	Timetable  *TimetableData  `json:"timetable"`
+	StudyPlan  *StudyPlanResult `json:"studyPlan"`
 }
 
 func (a *App) FetchDashboardData() DashboardData {
@@ -137,6 +138,18 @@ func (a *App) FetchDashboardData() DashboardData {
 		}
 	}()
 
+	// Study plan from spreadsheet
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if s.SpreadsheetURL != "" {
+			sp, _ := fetchStudyPlanFromSheet(s.SpreadsheetURL)
+			mu.Lock()
+			result.StudyPlan = sp
+			mu.Unlock()
+		}
+	}()
+
 	wg.Wait()
 
 	// Merge and deduplicate events
@@ -149,7 +162,6 @@ func (a *App) FetchDashboardData() DashboardData {
 	if result.Events == nil {
 		result.Events = []ScheduleEvent{}
 	}
-
 	return result
 }
 

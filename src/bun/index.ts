@@ -123,6 +123,14 @@ type WindowRPC = {
   };
 };
 
+// School search result type
+interface SchoolSearchResult {
+  schoolCode: string;
+  officeCode: string;
+  schoolName: string;
+  address?: string;
+}
+
 // Type for settings window RPC
 type SettingsRPC = {
   bun: {
@@ -133,6 +141,8 @@ type SettingsRPC = {
       pickAlarmFile: { params: undefined; response: { data: string; name: string } | null };
       getAutoStart: { params: undefined; response: boolean };
       setAutoStart: { params: { enabled: boolean }; response: void };
+      searchSchool: { params: { schoolName: string }; response: SchoolSearchResult[] };
+      geocodeAddress: { params: { address: string }; response: { lat: number; lon: number } | null };
     };
     messages: {};
   };
@@ -255,7 +265,7 @@ const dashboardRPC = BrowserView.defineRPC<WindowRPC>({
 const mainWindow = new BrowserWindow({
   title: "Wall-E 학교 대시보드",
   url: "views://dashboard/index.html",
-  frame: { x: 100, y: 100, width: 1280, height: 800 },
+  frame: { x: 100, y: 50, width: 1280, height: 960 },
   titleBarStyle: "hidden",
   transparent: true,
   rpc: dashboardRPC,
@@ -434,6 +444,46 @@ function openSettings() {
             const base64 = Buffer.from(bytes).toString("base64");
             return { data: `data:${mime};base64,${base64}`, name };
           } catch {
+            return null;
+          }
+        },
+        searchSchool: async (params: { schoolName: string }): Promise<SchoolSearchResult[]> => {
+          const apiKey = ENV_NEIS_API_KEY;
+          const schoolName = params.schoolName;
+          if (!apiKey || !schoolName) return [];
+          try {
+            const url = `https://open.neis.go.kr/hub/schoolInfo?KEY=${apiKey}&SCHUL_NM=${encodeURIComponent(schoolName)}&Type=json`;
+            const res = await fetch(url);
+            if (!res.ok) {
+              console.warn(`[searchSchool] NEIS API HTTP ${res.status}`);
+              return [];
+            }
+            const data = await res.json();
+            const rows = data?.schoolInfo?.[1]?.row;
+            if (!Array.isArray(rows)) return [];
+            return rows.map((row: any) => ({
+              schoolCode: row.SD_SCHUL_CODE,
+              officeCode: row.ATPT_OFCDC_SC_CODE,
+              schoolName: row.SCHUL_NM,
+              address: row.ORG_RDNMA || "",
+            }));
+          } catch (err) {
+            console.error("[searchSchool] error:", err);
+            return [];
+          }
+        },
+        geocodeAddress: async (params: { address: string }): Promise<{ lat: number; lon: number } | null> => {
+          try {
+            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(params.address)}&format=json&limit=1&countrycodes=kr`;
+            const res = await fetch(url, {
+              headers: { "Accept-Language": "ko", "User-Agent": "Wall-E-SchoolDashboard/1.0" },
+            });
+            if (!res.ok) return null;
+            const data = await res.json();
+            if (!Array.isArray(data) || data.length === 0) return null;
+            return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+          } catch (err) {
+            console.error("[geocode] error:", err);
             return null;
           }
         },
