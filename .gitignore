@@ -6,6 +6,12 @@ out
 dist
 *.tgz
 
+# build output
+build/
+
+# installer output
+installer/*.exe
+
 # code coverage
 coverage
 *.lcov

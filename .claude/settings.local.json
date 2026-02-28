@@ -33,7 +33,10 @@
       "WebFetch(domain:unsplash.com)",
       "Bash(where:*)",
       "Bash(/e/works/project/wall-e/node_modules/rcedit/bin/rcedit-x64.exe:*)",
-      "Bash(bunx tsc:*)"
+      "Bash(bunx tsc:*)",
+      "Bash(gh:*)",
+      "Bash(makensis:*)",
+      "Bash(python3:*)"
     ]
   }
 }

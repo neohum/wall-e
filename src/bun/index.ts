@@ -1,6 +1,7 @@
 import { BrowserWindow, BrowserView, ApplicationMenu, Tray, Utils } from "electrobun/bun";
 import { join, basename, extname } from "node:path";
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { dlopen, FFIType, JSCallback } from "bun:ffi";
 
 // ===== Settings JSON File Management =====
 
@@ -121,21 +122,29 @@ ApplicationMenu.setApplicationMenu([
     submenu: [
       {
         label: "Settings",
-        action: () => {
-          openSettings();
-        },
+        action: "open-settings",
       },
       { type: "separator" },
       {
         label: "Toggle DevTools",
         accelerator: "F12",
-        action: () => {
-          mainWindow.webview.toggleDevTools();
-        },
+        action: "toggle-devtools",
       },
     ],
   },
 ]);
+
+ApplicationMenu.on("application-menu-clicked", (event: any) => {
+  const action = event?.data?.action;
+  switch (action) {
+    case "open-settings":
+      openSettings();
+      break;
+    case "toggle-devtools":
+      mainWindow.webview.toggleDevTools();
+      break;
+  }
+});
 
 // Helper to get settings with API key attached
 function getSettingsWithKey(): Settings & { neisApiKey: string } {
@@ -175,6 +184,77 @@ const mainWindow = new BrowserWindow({
   rpc: dashboardRPC,
 });
 
+// ===== Taskbar Icon =====
+// Set the window icon via Windows API (WM_SETICON) since Electrobun doesn't do this.
+const user32 = dlopen("user32.dll", {
+  SendMessageW: { args: [FFIType.ptr, FFIType.u32, FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
+  LoadImageW: { args: [FFIType.ptr, FFIType.ptr, FFIType.u32, FFIType.i32, FFIType.i32, FFIType.u32], returns: FFIType.ptr },
+  EnumWindows: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.bool },
+  GetWindowThreadProcessId: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.u32 },
+  IsWindowVisible: { args: [FFIType.ptr], returns: FFIType.bool },
+});
+
+const kernel32 = dlopen("kernel32.dll", {
+  GetCurrentProcessId: { args: [], returns: FFIType.u32 },
+});
+
+const WM_SETICON = 0x0080;
+const ICON_BIG = 1;
+const ICON_SMALL = 0;
+const IMAGE_ICON = 1;
+const LR_LOADFROMFILE = 0x0010;
+
+function toWideString(str: string): Buffer {
+  const buf = Buffer.alloc((str.length + 1) * 2);
+  for (let i = 0; i < str.length; i++) {
+    buf.writeUInt16LE(str.charCodeAt(i), i * 2);
+  }
+  return buf;
+}
+
+function applyIconToAllWindows(): void {
+  try {
+    const iconPath = join(import.meta.dir, "..", "views", "icon.ico");
+    if (!existsSync(iconPath)) {
+      console.warn("[icon] not found:", iconPath);
+      return;
+    }
+
+    const iconPathW = toWideString(iconPath);
+    const hIconBig = user32.symbols.LoadImageW(null, iconPathW, IMAGE_ICON, 48, 48, LR_LOADFROMFILE);
+    const hIconSmall = user32.symbols.LoadImageW(null, iconPathW, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+
+    if (!hIconBig && !hIconSmall) {
+      console.warn("[icon] LoadImageW failed for:", iconPath);
+      return;
+    }
+
+    const myPid = kernel32.symbols.GetCurrentProcessId();
+    const pidBuf = new Uint32Array(1);
+    let count = 0;
+
+    const callback = new JSCallback(
+      (hwnd: any, _lParam: any) => {
+        user32.symbols.GetWindowThreadProcessId(hwnd, pidBuf);
+        if (pidBuf[0] === myPid && user32.symbols.IsWindowVisible(hwnd)) {
+          if (hIconBig) user32.symbols.SendMessageW(hwnd, WM_SETICON, ICON_BIG as any, hIconBig);
+          if (hIconSmall) user32.symbols.SendMessageW(hwnd, WM_SETICON, ICON_SMALL as any, hIconSmall);
+          count++;
+        }
+        return 1; // TRUE = continue enumeration
+      },
+      { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
+    );
+
+    user32.symbols.EnumWindows(callback.ptr, null);
+    console.log(`[icon] applied to ${count} window(s)`);
+  } catch (err) {
+    console.warn("[icon] error:", err);
+  }
+}
+
+setTimeout(applyIconToAllWindows, 1500);
+
 // ===== System Tray =====
 const tray = new Tray({
   title: "Wall-E",
@@ -187,30 +267,39 @@ const tray = new Tray({
 tray.setMenu([
   {
     label: "Wall-E 대시보드 열기",
-    action: () => {
-      mainWindow.focus();
-    },
+    action: "open-dashboard",
   },
   { type: "separator" },
   {
     label: "설정",
-    action: () => {
-      openSettings();
-    },
+    action: "open-settings",
   },
   { type: "separator" },
   {
     label: "종료",
-    action: () => {
-      tray.remove();
-      mainWindow.close();
-      process.exit(0);
-    },
+    action: "quit",
   },
 ]);
 
-tray.on("tray-clicked", () => {
-  mainWindow.focus();
+tray.on("tray-clicked", (event: any) => {
+  const action = event?.data?.action;
+  switch (action) {
+    case "open-dashboard":
+      mainWindow.focus();
+      break;
+    case "open-settings":
+      openSettings();
+      break;
+    case "quit":
+      tray.remove();
+      mainWindow.close();
+      process.exit(0);
+      break;
+    default:
+      // Tray icon click (no specific action)
+      mainWindow.focus();
+      break;
+  }
 });
 
 // ===== Settings Window =====
@@ -277,6 +366,8 @@ function openSettings() {
     transparent: true,
     rpc: settingsRPC,
   });
+
+  setTimeout(applyIconToAllWindows, 500);
 
   settingsWindow.on("close", () => {
     settingsWindow = null;
