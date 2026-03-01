@@ -14,7 +14,7 @@ import (
 
 const (
 	githubRepo = "neohum/wall-e"
-	appVersion = "1.0.10"
+	appVersion = "1.0.11"
 )
 
 type githubRelease struct {
@@ -56,11 +56,11 @@ func checkForUpdate(currentVersion string) UpdateCheckResult {
 
 	latestVersion := strings.TrimPrefix(release.TagName, "v")
 
-	// Find setup exe asset
+	// Find installer/setup exe asset
 	var downloadURL string
 	for _, asset := range release.Assets {
 		name := strings.ToLower(asset.Name)
-		if strings.HasSuffix(name, "-setup.exe") || strings.HasSuffix(name, "setup.exe") {
+		if strings.HasSuffix(name, "-installer.exe") || strings.HasSuffix(name, "-setup.exe") || strings.HasSuffix(name, "setup.exe") {
 			downloadURL = asset.BrowserDownloadURL
 			break
 		}
