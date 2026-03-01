@@ -1,8 +1,9 @@
-import { BrowserWindow, BrowserView, ApplicationMenu, Tray, Utils } from "electrobun/bun";
+import { BrowserWindow, BrowserView, ApplicationMenu, Tray, Utils, Updater } from "electrobun/bun";
 import { join, basename, extname } from "node:path";
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dlopen, FFIType, JSCallback } from "bun:ffi";
 import { createAutoUpdater, type UpdateCheckResult } from "./updater";
+import { fetchAllDashboardData, type DashboardData } from "../dashboard/api.ts";
 
 
 // ===== Settings JSON File Management =====
@@ -111,6 +112,7 @@ type WindowRPC = {
       getSettings: { params: undefined; response: Settings & { neisApiKey: string; appVersion: string } };
       checkForUpdate: { params: undefined; response: UpdateCheckResult };
       applyUpdate: { params: undefined; response: void };
+      fetchDashboardData: { params: undefined; response: DashboardData };
     };
     messages: {};
   };
@@ -258,6 +260,10 @@ const dashboardRPC = BrowserView.defineRPC<WindowRPC>({
         } catch (err) {
           console.error("[updater] Update failed:", err);
         }
+      },
+      fetchDashboardData: async () => {
+        const settings = getSettingsWithKey();
+        return await fetchAllDashboardData(settings);
       },
     },
   },

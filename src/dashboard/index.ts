@@ -3,7 +3,6 @@
 
 import { Electroview } from "electrobun/view";
 import {
-  fetchAllDashboardData,
   getWeatherIcon,
   getPMLevel,
   getPMLevelLabel,
@@ -44,6 +43,7 @@ type WindowRPC = {
       getSettings: { params: undefined; response: Settings };
       checkForUpdate: { params: undefined; response: any };
       applyUpdate: { params: undefined; response: void };
+      fetchDashboardData: { params: undefined; response: DashboardData };
     };
     messages: {};
   };
@@ -374,7 +374,7 @@ function updateEvents(): void {
 
 async function loadDashboardData(): Promise<void> {
   try {
-    dashboardData = await fetchAllDashboardData(getSettings());
+    dashboardData = await rpc.request.fetchDashboardData();
     lastFetchTime = Date.now();
     updateWeather();
     updateAirQuality();
