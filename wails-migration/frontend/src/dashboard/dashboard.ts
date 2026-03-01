@@ -115,6 +115,7 @@ declare global {
           GetNeisAPIKey(): Promise<string>;
           GetAppVersion(): Promise<string>;
           CheckForUpdate(): Promise<any>;
+          DownloadAndRunUpdate(url: string): Promise<string>;
           OpenDownloadURL(url: string): Promise<void>;
         };
       };

@@ -12,5 +12,8 @@
     "declaration": true,
     "sourceMap": true
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*",
+    "wailsjs/**/*"
+  ]
 }

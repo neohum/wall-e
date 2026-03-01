@@ -46,11 +46,11 @@ func (a *App) SaveSettings(s Settings) {
 // ===== Dashboard data =====
 
 type DashboardData struct {
-	Weather    *WeatherData    `json:"weather"`
-	AirQuality *AirQualityData `json:"airQuality"`
-	Meals      []MealData      `json:"meals"`
-	Events     []ScheduleEvent `json:"events"`
-	Timetable  *TimetableData  `json:"timetable"`
+	Weather    *WeatherData     `json:"weather"`
+	AirQuality *AirQualityData  `json:"airQuality"`
+	Meals      []MealData       `json:"meals"`
+	Events     []ScheduleEvent  `json:"events"`
+	Timetable  *TimetableData   `json:"timetable"`
 	StudyPlan  *StudyPlanResult `json:"studyPlan"`
 }
 
@@ -390,6 +390,12 @@ type UpdateCheckResult struct {
 
 func (a *App) CheckForUpdate() UpdateCheckResult {
 	return checkForUpdate(appVersion)
+}
+
+// DownloadAndRunUpdate downloads the setup exe and runs it silently.
+// Returns an empty string on success, or an error message.
+func (a *App) DownloadAndRunUpdate(url string) string {
+	return downloadAndRunUpdate(url)
 }
 
 func (a *App) OpenDownloadURL(url string) {

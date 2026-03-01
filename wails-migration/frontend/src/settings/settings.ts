@@ -474,7 +474,7 @@ export async function initSettings(): Promise<void> {
     if (pendingCustomAlarmData) {
       const audio = new Audio(pendingCustomAlarmData);
       audio.volume = 0.5;
-      audio.play().catch(() => {});
+      audio.play().catch(() => { });
     }
   });
 
@@ -522,9 +522,26 @@ export async function initSettings(): Promise<void> {
     btn.textContent = "업데이트 확인";
   });
 
-  document.getElementById("btnDownloadUpdate")?.addEventListener("click", () => {
-    if (latestDownloadURL) {
-      window.go.main.App.OpenDownloadURL(latestDownloadURL);
+  document.getElementById("btnDownloadUpdate")?.addEventListener("click", async () => {
+    const btn = document.getElementById("btnDownloadUpdate") as HTMLButtonElement;
+    const statusEl = document.getElementById("updateStatus")!;
+
+    btn.disabled = true;
+    btn.textContent = "다운로드 중...";
+    statusEl.textContent = "설치 파일을 다운로드하는 중입니다. 잠시 기다려 주세요...";
+    statusEl.className = "update-status";
+
+    const errMsg = await window.go.main.App.DownloadAndRunUpdate(latestDownloadURL);
+
+    if (errMsg) {
+      statusEl.textContent = `다운로드 실패: ${errMsg}`;
+      statusEl.className = "update-status error";
+      btn.disabled = false;
+      btn.textContent = "다운로드";
+    } else {
+      statusEl.textContent = "설치 프로그램이 실행됩니다. 설치 후 앱을 다시 시작하세요.";
+      statusEl.className = "update-status latest";
+      // Keep button disabled — installer should take over
     }
   });
 
