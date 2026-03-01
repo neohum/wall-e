@@ -13,6 +13,7 @@ import {
 import {
   checkAndPlayAlarms,
   resetAlarmsIfNewDay,
+  type AlarmEvent,
 } from "./audio";
 import {
   formatDate,
@@ -469,6 +470,58 @@ async function loadDashboardData(): Promise<void> {
   }
 }
 
+// ===== Alarm Popup =====
+
+let alarmPopupTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function showAlarmPopup(event: AlarmEvent): void {
+  const popup = document.getElementById("alarmPopup");
+  const iconEl = document.getElementById("alarmPopupIcon");
+  const textEl = document.getElementById("alarmPopupText");
+  if (!popup || !iconEl || !textEl) return;
+
+  if (alarmPopupTimeout) {
+    clearTimeout(alarmPopupTimeout);
+    alarmPopupTimeout = null;
+  }
+
+  popup.className = "alarm-popup";
+
+  let icon: string;
+  let text: string;
+
+  switch (event.type) {
+    case "start":
+      icon = "\uD83D\uDD14";
+      text = `${event.period}교시 수업 시작입니다`;
+      popup.classList.add("alarm-start");
+      break;
+    case "end":
+      icon = "\u2705";
+      text = `${event.period}교시 수업 종료입니다`;
+      popup.classList.add("alarm-end");
+      break;
+    case "warning":
+      icon = "\u26A0\uFE0F";
+      text = `${event.period}교시 수업 1분 전입니다`;
+      popup.classList.add("alarm-warning");
+      break;
+  }
+
+  iconEl.textContent = icon;
+  textEl.textContent = text;
+
+  popup.classList.add("visible");
+
+  alarmPopupTimeout = setTimeout(() => {
+    popup.classList.add("fade-out");
+    popup.classList.remove("visible");
+    setTimeout(() => {
+      popup.className = "alarm-popup";
+    }, 400);
+  }, 5000);
+}
+
 // ===== Update Loop =====
 
 function startUpdateLoop(): void {
@@ -478,7 +531,10 @@ function startUpdateLoop(): void {
 
     const settings = getSettings();
     const periods = getPeriods(dashboardData?.timetable ?? null);
-    checkAndPlayAlarms(periods, settings.alarmEnabled, settings.alarmSound, settings.customAlarmData);
+    const alarmEvent = checkAndPlayAlarms(periods, settings.alarmEnabled, settings.alarmSound, settings.customAlarmData);
+    if (alarmEvent) {
+      showAlarmPopup(alarmEvent);
+    }
     resetAlarmsIfNewDay();
   }, 1000);
 

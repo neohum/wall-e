@@ -234,6 +234,11 @@ export function playCustomAlarm(dataUrl: string): void {
 
 const playedAlarms = new Set<string>();
 
+export interface AlarmEvent {
+  period: number;
+  type: AlarmType;
+}
+
 export function getAlarmKey(period: number, type: "warning" | "start" | "end"): string {
   const now = new Date();
   const dateStr = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
@@ -251,8 +256,8 @@ export function checkAndPlayAlarms(
   enabled: boolean,
   alarmSound: string = "classic",
   customAlarmData: string = "",
-): void {
-  if (!enabled) return;
+): AlarmEvent | null {
+  if (!enabled) return null;
 
   const now = new Date();
   const h = now.getHours();
@@ -260,7 +265,7 @@ export function checkAndPlayAlarms(
   const s = now.getSeconds();
   const currentMinutes = h * 60 + m;
 
-  if (s > 2) return;
+  if (s > 2) return null;
 
   for (const p of periods) {
     const [startH, startM] = p.start.split(":").map(Number);
@@ -276,6 +281,7 @@ export function checkAndPlayAlarms(
         } else {
           playPresetAlarm(alarmSound, "warning");
         }
+        return { period: p.period, type: "warning" };
       }
     }
 
@@ -287,6 +293,7 @@ export function checkAndPlayAlarms(
         } else {
           playPresetAlarm(alarmSound, "start");
         }
+        return { period: p.period, type: "start" };
       }
     }
 
@@ -298,9 +305,12 @@ export function checkAndPlayAlarms(
         } else {
           playPresetAlarm(alarmSound, "end");
         }
+        return { period: p.period, type: "end" };
       }
     }
   }
+
+  return null;
 }
 
 export function resetAlarmsIfNewDay(): void {
