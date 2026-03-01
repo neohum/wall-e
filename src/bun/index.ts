@@ -108,7 +108,7 @@ type WindowRPC = {
       maximizeWindow: { params: undefined; response: void };
       closeWindow: { params: undefined; response: void };
       openSettings: { params: undefined; response: void };
-      getSettings: { params: undefined; response: Settings & { neisApiKey: string } };
+      getSettings: { params: undefined; response: Settings & { neisApiKey: string; appVersion: string } };
       checkForUpdate: { params: undefined; response: UpdateCheckResult };
       applyUpdate: { params: undefined; response: void };
     };
@@ -117,7 +117,7 @@ type WindowRPC = {
   webview: {
     requests: {};
     messages: {
-      settingsChanged: Settings & { neisApiKey: string };
+      settingsChanged: Settings & { neisApiKey: string; appVersion: string };
       updateAvailable: { version: string; downloadUrl: string };
     };
   };
@@ -136,7 +136,7 @@ type SettingsRPC = {
   bun: {
     requests: {
       closeSettings: { params: undefined; response: void };
-      getSettings: { params: undefined; response: Settings & { neisApiKey: string } };
+      getSettings: { params: undefined; response: Settings & { neisApiKey: string; appVersion: string } };
       saveSettings: { params: Settings; response: void };
       pickAlarmFile: { params: undefined; response: { data: string; name: string } | null };
       getAutoStart: { params: undefined; response: boolean };
@@ -200,9 +200,9 @@ ApplicationMenu.on("application-menu-clicked", (event: any) => {
   }
 });
 
-// Helper to get settings with API key attached
-function getSettingsWithKey(): Settings & { neisApiKey: string } {
-  return { ...readSettings(), neisApiKey: ENV_NEIS_API_KEY };
+// Helper to get settings with API key and version attached
+function getSettingsWithKey(): Settings & { neisApiKey: string; appVersion: string } {
+  return { ...readSettings(), neisApiKey: ENV_NEIS_API_KEY, appVersion: APP_VERSION };
 }
 
 // ===== Auto-Updater =====
@@ -265,7 +265,7 @@ const dashboardRPC = BrowserView.defineRPC<WindowRPC>({
 
 // Main dashboard window (frameless + transparent for rounded corners)
 const mainWindow = new BrowserWindow({
-  title: "Wall-E 학교 대시보드",
+  title: `Wall-E 학교 대시보드 v${APP_VERSION}`,
   url: "views://dashboard/index.html",
   frame: { x: 100, y: 50, width: 1280, height: 960 },
   titleBarStyle: "hidden",

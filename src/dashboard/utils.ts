@@ -15,6 +15,7 @@ export interface Settings {
   customAlarmData: string;
   customAlarmName: string;
   backgroundId: string;
+  appVersion: string;
 }
 
 // Day of week helpers

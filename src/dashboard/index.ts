@@ -97,6 +97,7 @@ const DEFAULT_SETTINGS: Settings = {
   customAlarmData: "",
   customAlarmName: "",
   backgroundId: "",
+  appVersion: "",
 };
 
 function getSettings(): Settings {
@@ -177,12 +178,16 @@ function updateHeader(): void {
   const settings = getSettings();
   const schoolNameEl = $("#schoolName");
   const classInfoEl = $("#classInfo");
+  const versionEl = $("#appVersion");
 
   if (schoolNameEl) schoolNameEl.textContent = settings.schoolName || "학교 대시보드";
   if (classInfoEl) {
     classInfoEl.textContent = settings.schoolCode
       ? `${settings.grade}학년 ${settings.classNum}반`
       : "설정에서 학교 정보를 입력하세요";
+  }
+  if (versionEl && settings.appVersion) {
+    versionEl.textContent = `v${settings.appVersion}`;
   }
 }
 
