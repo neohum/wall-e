@@ -121,10 +121,11 @@ async function applyWindowBackground(bgId: string): Promise<void> {
   }
 }
 
-type BgTab = "image" | "vivid" | "pastel";
-let activeBgTab: BgTab = "image";
+function deselectAll(wrapper: HTMLElement): void {
+  wrapper.querySelectorAll(".bg-thumb").forEach((el) => el.classList.remove("selected"));
+}
 
-function renderColorGrid(container: HTMLElement, colors: ColorPreset[]): void {
+function renderColorGrid(container: HTMLElement, colors: ColorPreset[], wrapper: HTMLElement): void {
   for (const c of colors) {
     const thumb = document.createElement("div");
     thumb.className = `bg-thumb bg-thumb--color${c.id === selectedBackgroundId ? " selected" : ""}`;
@@ -141,7 +142,7 @@ function renderColorGrid(container: HTMLElement, colors: ColorPreset[]): void {
     thumb.innerHTML = `<span class="bg-thumb__label">${c.label}</span>`;
     thumb.addEventListener("click", () => {
       selectedBackgroundId = c.id;
-      container.querySelectorAll(".bg-thumb").forEach((el) => el.classList.remove("selected"));
+      deselectAll(wrapper);
       thumb.classList.add("selected");
       applyWindowBackground(c.id);
     });
@@ -155,140 +156,133 @@ function renderBackgroundPicker(): void {
 
   wrapper.innerHTML = "";
 
-  // ---- Tab Bar ----
-  const tabBar = document.createElement("div");
-  tabBar.className = "bg-tab-bar";
+  // ---- Image Section ----
+  const imageHeader = document.createElement("div");
+  imageHeader.className = "bg-section-header";
+  imageHeader.textContent = "이미지";
+  wrapper.appendChild(imageHeader);
 
-  const tabs: { key: BgTab; label: string }[] = [
-    { key: "image", label: "이미지" },
-    { key: "vivid", label: "원색" },
-    { key: "pastel", label: "파스텔" },
-  ];
+  const imageGrid = document.createElement("div");
+  imageGrid.className = "bg-tab-content bg-tab-content--image";
 
-  const contentEl = document.createElement("div");
-  contentEl.className = "bg-tab-content";
+  for (const bg of BACKGROUNDS) {
+    const thumb = document.createElement("div");
+    thumb.className = `bg-thumb${bg.id === "" ? " bg-thumb--default" : ""}${bg.id === selectedBackgroundId ? " selected" : ""}`;
+    thumb.dataset.bgId = bg.id;
+    thumb.title = bg.label;
+    thumb.style.background = bg.fallback;
 
-  tabs.forEach(({ key, label }) => {
-    const btn = document.createElement("button");
-    btn.className = `bg-tab-btn${activeBgTab === key ? " active" : ""}`;
-    btn.textContent = label;
-    btn.addEventListener("click", () => {
-      activeBgTab = key;
-      renderBackgroundPicker();
-    });
-    tabBar.appendChild(btn);
-  });
-
-  wrapper.appendChild(tabBar);
-
-  // ---- Tab Content ----
-  contentEl.innerHTML = "";
-
-  if (activeBgTab === "image") {
-    // Preset image backgrounds
-    for (const bg of BACKGROUNDS) {
-      const thumb = document.createElement("div");
-      thumb.className = `bg-thumb${bg.id === "" ? " bg-thumb--default" : ""}${bg.id === selectedBackgroundId ? " selected" : ""}`;
-      thumb.dataset.bgId = bg.id;
-      thumb.title = bg.label;
-      thumb.style.background = bg.fallback;
-
-      if (bg.id === "") {
-        thumb.innerHTML = `<span>${bg.label}</span>`;
-      } else {
-        const img = document.createElement("img");
-        img.src = `${BG_THUMB}/${bg.id}`;
-        img.alt = bg.label;
-        img.loading = "lazy";
-        img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;";
-        img.onerror = () => { img.style.display = "none"; };
-        thumb.appendChild(img);
-      }
-
-      thumb.addEventListener("click", () => {
-        selectedBackgroundId = bg.id;
-        contentEl.querySelectorAll(".bg-thumb").forEach((el) => el.classList.remove("selected"));
-        thumb.classList.add("selected");
-        applyWindowBackground(bg.id);
-      });
-
-      contentEl.appendChild(thumb);
+    if (bg.id === "") {
+      thumb.innerHTML = `<span>${bg.label}</span>`;
+    } else {
+      const img = document.createElement("img");
+      img.src = `${BG_THUMB}/${bg.id}`;
+      img.alt = bg.label;
+      img.loading = "lazy";
+      img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;";
+      img.onerror = () => { img.style.display = "none"; };
+      thumb.appendChild(img);
     }
 
-    // Custom backgrounds
-    for (const cb of customBackgrounds) {
-      const customBgId = `custom:${cb.id}`;
-      const thumb = document.createElement("div");
-      thumb.className = `bg-thumb bg-thumb--custom${customBgId === selectedBackgroundId ? " selected" : ""}`;
-      thumb.dataset.bgId = customBgId;
-      thumb.title = cb.name;
-
-      window.go.main.App.GetCustomBackgroundURL(cb.id).then((dataURL: string) => {
-        if (dataURL) {
-          const img = document.createElement("img");
-          img.src = dataURL;
-          img.alt = cb.name;
-          img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;";
-          thumb.insertBefore(img, thumb.firstChild);
-        }
-      });
-
-      const deleteBtn = document.createElement("button");
-      deleteBtn.className = "bg-thumb__delete";
-      deleteBtn.innerHTML = "\u00D7";
-      deleteBtn.title = "삭제";
-      deleteBtn.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        await window.go.main.App.RemoveCustomBackground(cb.id);
-        customBackgrounds = customBackgrounds.filter((b) => b.id !== cb.id);
-        if (selectedBackgroundId === customBgId) {
-          selectedBackgroundId = "";
-          applyWindowBackground("");
-        }
-        renderBackgroundPicker();
-      });
-      thumb.appendChild(deleteBtn);
-
-      thumb.addEventListener("click", () => {
-        selectedBackgroundId = customBgId;
-        contentEl.querySelectorAll(".bg-thumb").forEach((el) => el.classList.remove("selected"));
-        thumb.classList.add("selected");
-        applyWindowBackground(customBgId);
-      });
-
-      contentEl.appendChild(thumb);
-    }
-
-    // Add custom background button
-    const addBtn = document.createElement("div");
-    addBtn.className = "bg-thumb bg-thumb--add";
-    addBtn.title = "이미지 추가";
-    addBtn.innerHTML = `<span>+</span>`;
-    addBtn.addEventListener("click", async () => {
-      const result = await window.go.main.App.PickBackgroundFile();
-      if (result) {
-        const newBg: CustomBackground = {
-          id: result.id,
-          name: result.name,
-          fileName: result.fileName,
-        };
-        customBackgrounds.push(newBg);
-        selectedBackgroundId = `custom:${newBg.id}`;
-        const values = collectFormValues();
-        await window.go.main.App.SaveSettings(values);
-        renderBackgroundPicker();
-        applyWindowBackground(selectedBackgroundId);
-      }
+    thumb.addEventListener("click", () => {
+      selectedBackgroundId = bg.id;
+      deselectAll(wrapper);
+      thumb.classList.add("selected");
+      applyWindowBackground(bg.id);
     });
-    contentEl.appendChild(addBtn);
 
-  } else if (activeBgTab === "vivid") {
-    renderColorGrid(contentEl, VIVID_COLORS);
-  } else {
-    renderColorGrid(contentEl, PASTEL_COLORS);
+    imageGrid.appendChild(thumb);
   }
 
-  wrapper.appendChild(contentEl);
+  // Custom backgrounds
+  for (const cb of customBackgrounds) {
+    const customBgId = `custom:${cb.id}`;
+    const thumb = document.createElement("div");
+    thumb.className = `bg-thumb bg-thumb--custom${customBgId === selectedBackgroundId ? " selected" : ""}`;
+    thumb.dataset.bgId = customBgId;
+    thumb.title = cb.name;
+
+    window.go.main.App.GetCustomBackgroundURL(cb.id).then((dataURL: string) => {
+      if (dataURL) {
+        const img = document.createElement("img");
+        img.src = dataURL;
+        img.alt = cb.name;
+        img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;";
+        thumb.insertBefore(img, thumb.firstChild);
+      }
+    });
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "bg-thumb__delete";
+    deleteBtn.innerHTML = "\u00D7";
+    deleteBtn.title = "삭제";
+    deleteBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await window.go.main.App.RemoveCustomBackground(cb.id);
+      customBackgrounds = customBackgrounds.filter((b) => b.id !== cb.id);
+      if (selectedBackgroundId === customBgId) {
+        selectedBackgroundId = "";
+        applyWindowBackground("");
+      }
+      renderBackgroundPicker();
+    });
+    thumb.appendChild(deleteBtn);
+
+    thumb.addEventListener("click", () => {
+      selectedBackgroundId = customBgId;
+      deselectAll(wrapper);
+      thumb.classList.add("selected");
+      applyWindowBackground(customBgId);
+    });
+
+    imageGrid.appendChild(thumb);
+  }
+
+  // Add custom background button
+  const addBtn = document.createElement("div");
+  addBtn.className = "bg-thumb bg-thumb--add";
+  addBtn.title = "이미지 추가";
+  addBtn.innerHTML = `<span>+</span>`;
+  addBtn.addEventListener("click", async () => {
+    const result = await window.go.main.App.PickBackgroundFile();
+    if (result) {
+      const newBg: CustomBackground = {
+        id: result.id,
+        name: result.name,
+        fileName: result.fileName,
+      };
+      customBackgrounds.push(newBg);
+      selectedBackgroundId = `custom:${newBg.id}`;
+      const values = collectFormValues();
+      await window.go.main.App.SaveSettings(values);
+      renderBackgroundPicker();
+      applyWindowBackground(selectedBackgroundId);
+    }
+  });
+  imageGrid.appendChild(addBtn);
+  wrapper.appendChild(imageGrid);
+
+  // ---- Vivid Section ----
+  const vividHeader = document.createElement("div");
+  vividHeader.className = "bg-section-header";
+  vividHeader.textContent = "원색";
+  wrapper.appendChild(vividHeader);
+
+  const vividGrid = document.createElement("div");
+  vividGrid.className = "bg-tab-content bg-tab-content--color";
+  renderColorGrid(vividGrid, VIVID_COLORS, wrapper);
+  wrapper.appendChild(vividGrid);
+
+  // ---- Pastel Section ----
+  const pastelHeader = document.createElement("div");
+  pastelHeader.className = "bg-section-header";
+  pastelHeader.textContent = "파스텔";
+  wrapper.appendChild(pastelHeader);
+
+  const pastelGrid = document.createElement("div");
+  pastelGrid.className = "bg-tab-content bg-tab-content--color";
+  renderColorGrid(pastelGrid, PASTEL_COLORS, wrapper);
+  wrapper.appendChild(pastelGrid);
 }
 
 // ===== Form =====
@@ -302,6 +296,14 @@ function loadFormValues(s: Settings): void {
   ($("latitude") as HTMLInputElement).value = String(s.latitude);
   ($("longitude") as HTMLInputElement).value = String(s.longitude);
   $("spreadsheetUrl").value = s.spreadsheetUrl;
+
+  // API key toggle
+  const useCustomKey = s.useCustomApiKey || false;
+  ($("useCustomApiKey") as HTMLInputElement).checked = useCustomKey;
+  $("customApiKey").value = s.customApiKey || "";
+  const apiKeyGroup = document.getElementById("customApiKeyGroup");
+  if (apiKeyGroup) apiKeyGroup.style.display = useCustomKey ? "" : "none";
+
   ($("alarmEnabled") as HTMLInputElement).checked = s.alarmEnabled;
 
   const radio = document.querySelector(`input[name="alarmSound"][value="${s.alarmSound || "classic"}"]`) as HTMLInputElement | null;
@@ -326,6 +328,8 @@ function collectFormValues(): Settings {
     latitude: parseFloat(($("latitude") as HTMLInputElement).value) || 0,
     longitude: parseFloat(($("longitude") as HTMLInputElement).value) || 0,
     spreadsheetUrl: $("spreadsheetUrl").value.trim(),
+    useCustomApiKey: ($("useCustomApiKey") as HTMLInputElement).checked,
+    customApiKey: $("customApiKey").value.trim(),
     alarmEnabled: ($("alarmEnabled") as HTMLInputElement).checked,
     alarmSound: selectedRadio?.value || "classic",
     customAlarmData: pendingCustomAlarmData,
@@ -535,7 +539,7 @@ export async function initSettings(): Promise<void> {
     document.getElementById("settingsOverlay")?.classList.remove("open");
   });
 
-  // Help modal
+  // Help modal (spreadsheet)
   const helpOverlay = document.getElementById("helpOverlay")!;
   document.getElementById("btnHelp")?.addEventListener("click", () => {
     helpOverlay.classList.add("open");
@@ -545,6 +549,27 @@ export async function initSettings(): Promise<void> {
   });
   helpOverlay.addEventListener("click", (e) => {
     if (e.target === helpOverlay) helpOverlay.classList.remove("open");
+  });
+
+  // API key toggle
+  const useCustomApiKeyCheckbox = $("useCustomApiKey") as HTMLInputElement;
+  const customApiKeyGroup = document.getElementById("customApiKeyGroup");
+  useCustomApiKeyCheckbox.addEventListener("change", () => {
+    if (customApiKeyGroup) customApiKeyGroup.style.display = useCustomApiKeyCheckbox.checked ? "" : "none";
+  });
+
+  // API key help modal
+  const apiKeyHelpOverlay = document.getElementById("apiKeyHelpOverlay")!;
+  document.getElementById("btnApiKeyHelp")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    apiKeyHelpOverlay.classList.add("open");
+  });
+  document.getElementById("btnCloseApiKeyHelp")?.addEventListener("click", () => {
+    apiKeyHelpOverlay.classList.remove("open");
+  });
+  apiKeyHelpOverlay.addEventListener("click", (e) => {
+    if (e.target === apiKeyHelpOverlay) apiKeyHelpOverlay.classList.remove("open");
   });
 
   // Search school (uses Go backend)
@@ -559,11 +584,21 @@ export async function initSettings(): Promise<void> {
     btn.textContent = "검색 중...";
     btn.disabled = true;
 
-    const results = await window.go.main.App.SearchSchool(schoolName);
-    renderSearchResults(results);
-
-    btn.textContent = "검색";
-    btn.disabled = false;
+    try {
+      const result = await window.go.main.App.SearchSchool(schoolName);
+      if (result.error) {
+        showStatus(result.error, "error");
+        const container = document.getElementById("searchResults")!;
+        container.style.display = "none";
+      } else {
+        renderSearchResults(result.schools);
+      }
+    } catch (e) {
+      showStatus("학교 검색 중 오류가 발생했습니다", "error");
+    } finally {
+      btn.textContent = "검색";
+      btn.disabled = false;
+    }
   });
 
   // Alarm preview buttons
@@ -685,6 +720,8 @@ export async function initSettings(): Promise<void> {
         latitude: 0,
         longitude: 0,
         spreadsheetUrl: "",
+        useCustomApiKey: false,
+        customApiKey: "",
         alarmEnabled: true,
         alarmSound: "classic",
         customAlarmData: "",

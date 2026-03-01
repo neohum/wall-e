@@ -9,6 +9,8 @@ export interface Settings {
   latitude: number;
   longitude: number;
   spreadsheetUrl: string;
+  useCustomApiKey: boolean;
+  customApiKey: string;
   alarmEnabled: boolean;
   alarmSound: string;
   customAlarmData: string;

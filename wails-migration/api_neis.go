@@ -35,15 +35,23 @@ func fetchMeals(apiKey, officeCode, schoolCode, fromDate, toDate string) ([]Meal
 
 	resp, err := http.Get(u)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("급식 네트워크 오류: %w", err)
 	}
 	defer resp.Body.Close()
 
 	var raw struct {
 		MealServiceDietInfo []json.RawMessage `json:"mealServiceDietInfo"`
+		Result              *struct {
+			Code    string `json:"CODE"`
+			Message string `json:"MESSAGE"`
+		} `json:"RESULT"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("급식 응답 파싱 오류: %w", err)
+	}
+
+	if raw.Result != nil {
+		return nil, fmt.Errorf("급식 NEIS API 오류 (%s): %s", raw.Result.Code, raw.Result.Message)
 	}
 
 	if len(raw.MealServiceDietInfo) < 2 {
@@ -89,15 +97,24 @@ func searchSchool(apiKey, schoolName string) ([]SchoolInfo, error) {
 
 	resp, err := http.Get(u)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("네트워크 오류: %w", err)
 	}
 	defer resp.Body.Close()
 
 	var raw struct {
 		SchoolInfo []json.RawMessage `json:"schoolInfo"`
+		Result     *struct {
+			Code    string `json:"CODE"`
+			Message string `json:"MESSAGE"`
+		} `json:"RESULT"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("응답 파싱 오류: %w", err)
+	}
+
+	// NEIS API error response (rate limit, invalid key, etc.)
+	if raw.Result != nil {
+		return nil, fmt.Errorf("NEIS API 오류 (%s): %s", raw.Result.Code, raw.Result.Message)
 	}
 
 	if len(raw.SchoolInfo) < 2 {
@@ -113,7 +130,7 @@ func searchSchool(apiKey, schoolName string) ([]SchoolInfo, error) {
 		} `json:"row"`
 	}
 	if err := json.Unmarshal(raw.SchoolInfo[1], &rowData); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("데이터 파싱 오류: %w", err)
 	}
 
 	var results []SchoolInfo
@@ -137,15 +154,23 @@ func fetchSchoolEvents(apiKey, officeCode, schoolCode, fromDate, toDate string) 
 
 	resp, err := http.Get(u)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("행사 네트워크 오류: %w", err)
 	}
 	defer resp.Body.Close()
 
 	var raw struct {
 		SchoolSchedule []json.RawMessage `json:"SchoolSchedule"`
+		Result         *struct {
+			Code    string `json:"CODE"`
+			Message string `json:"MESSAGE"`
+		} `json:"RESULT"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("행사 응답 파싱 오류: %w", err)
+	}
+
+	if raw.Result != nil {
+		return nil, fmt.Errorf("행사 NEIS API 오류 (%s): %s", raw.Result.Code, raw.Result.Message)
 	}
 
 	if len(raw.SchoolSchedule) < 2 {

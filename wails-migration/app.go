@@ -30,6 +30,15 @@ func (a *App) startup(ctx context.Context) {
 
 func (a *App) shutdown(ctx context.Context) {}
 
+// getEffectiveAPIKey returns the user's custom key if enabled, otherwise the built-in key.
+func (a *App) getEffectiveAPIKey() string {
+	s := loadSettings()
+	if s.UseCustomAPIKey && s.CustomAPIKey != "" {
+		return s.CustomAPIKey
+	}
+	return a.neisAPIKey
+}
+
 // ===== Settings bindings =====
 
 func (a *App) GetSettings() Settings {
@@ -56,6 +65,7 @@ type DashboardData struct {
 
 func (a *App) FetchDashboardData() DashboardData {
 	s := loadSettings()
+	apiKey := a.getEffectiveAPIKey()
 	result := DashboardData{}
 
 	var wg sync.WaitGroup
@@ -89,13 +99,18 @@ func (a *App) FetchDashboardData() DashboardData {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if a.neisAPIKey != "" && s.SchoolCode != "" && s.OfficeCode != "" {
+		if apiKey != "" && s.SchoolCode != "" && s.OfficeCode != "" {
 			today := todayStr()
 			toDate := dateAfterDays(7)
-			meals, _ := fetchMeals(a.neisAPIKey, s.OfficeCode, s.SchoolCode, today, toDate)
+			meals, err := fetchMeals(apiKey, s.OfficeCode, s.SchoolCode, today, toDate)
+			if err != nil {
+				runtime.LogError(a.ctx, "Meals fetch error: "+err.Error())
+			}
 			mu.Lock()
 			result.Meals = meals
 			mu.Unlock()
+		} else {
+			runtime.LogWarning(a.ctx, fmt.Sprintf("Meals skipped: apiKey=%v, schoolCode=%q, officeCode=%q", apiKey != "", s.SchoolCode, s.OfficeCode))
 		}
 	}()
 
@@ -104,13 +119,18 @@ func (a *App) FetchDashboardData() DashboardData {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if a.neisAPIKey != "" && s.SchoolCode != "" && s.OfficeCode != "" {
+		if apiKey != "" && s.SchoolCode != "" && s.OfficeCode != "" {
 			today := todayStr()
 			eventEnd := endOfMonthPlus2()
-			evts, _ := fetchSchoolEvents(a.neisAPIKey, s.OfficeCode, s.SchoolCode, today, eventEnd)
+			evts, err := fetchSchoolEvents(apiKey, s.OfficeCode, s.SchoolCode, today, eventEnd)
+			if err != nil {
+				runtime.LogError(a.ctx, "Events fetch error: "+err.Error())
+			}
 			mu.Lock()
 			neisEvents = evts
 			mu.Unlock()
+		} else {
+			runtime.LogWarning(a.ctx, fmt.Sprintf("Events skipped: apiKey=%v, schoolCode=%q, officeCode=%q", apiKey != "", s.SchoolCode, s.OfficeCode))
 		}
 	}()
 
@@ -168,15 +188,28 @@ func (a *App) FetchDashboardData() DashboardData {
 
 // ===== School Search =====
 
-func (a *App) SearchSchool(name string) []SchoolInfo {
-	if a.neisAPIKey == "" || name == "" {
-		return []SchoolInfo{}
+type SchoolSearchResult struct {
+	Schools []SchoolInfo `json:"schools"`
+	Error   string       `json:"error"`
+}
+
+func (a *App) SearchSchool(name string) SchoolSearchResult {
+	apiKey := a.getEffectiveAPIKey()
+	if apiKey == "" {
+		return SchoolSearchResult{Error: "NEIS API 키가 설정되지 않았습니다. 설정에서 개인 인증키를 입력해 주세요."}
 	}
-	results, _ := searchSchool(a.neisAPIKey, name)
+	if name == "" {
+		return SchoolSearchResult{Schools: []SchoolInfo{}}
+	}
+	results, err := searchSchool(apiKey, name)
+	if err != nil {
+		runtime.LogError(a.ctx, "School search error: "+err.Error())
+		return SchoolSearchResult{Error: err.Error()}
+	}
 	if results == nil {
-		return []SchoolInfo{}
+		results = []SchoolInfo{}
 	}
-	return results
+	return SchoolSearchResult{Schools: results}
 }
 
 // ===== Geocoding =====

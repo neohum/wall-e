@@ -22,6 +22,8 @@ type Settings struct {
 	Latitude          float64            `json:"latitude"`
 	Longitude         float64            `json:"longitude"`
 	SpreadsheetURL    string             `json:"spreadsheetUrl"`
+	UseCustomAPIKey   bool               `json:"useCustomApiKey"`
+	CustomAPIKey      string             `json:"customApiKey"`
 	AlarmEnabled      bool               `json:"alarmEnabled"`
 	AlarmSound        string             `json:"alarmSound"`
 	CustomAlarmData   string             `json:"customAlarmData"`

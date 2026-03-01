@@ -146,6 +146,19 @@
               <input type="text" id="schoolCode" readonly placeholder="자동 입력">
             </div>
           </div>
+          <div class="form-group checkbox-group" style="margin-top:12px;">
+            <label class="toggle-label">
+              <input type="checkbox" id="useCustomApiKey">
+              <span class="toggle-switch"></span>
+              <span>개인 인증키 사용</span>
+              <button class="help-btn" id="btnApiKeyHelp" type="button" title="인증키 발급 방법">?</button>
+            </label>
+            <small>기본 인증키의 호출 한도 초과 시, 개인 인증키를 발급받아 입력하세요</small>
+          </div>
+          <div class="form-group" id="customApiKeyGroup" style="display:none;">
+            <label for="customApiKey">NEIS API 인증키</label>
+            <input type="text" id="customApiKey" placeholder="발급받은 인증키를 붙여넣으세요">
+          </div>
         </section>
 
         <!-- Class Info Section -->
@@ -298,6 +311,10 @@
           <button id="resetBtn" class="btn btn-secondary">초기화</button>
         </div>
         <div id="statusMessage" class="status-message" style="display:none;"></div>
+
+        <div class="settings-footer">
+          제작자 : neohum77@gmail.com
+        </div>
       </div>
     </div>
   </div>
@@ -403,6 +420,63 @@
       </div>
     </div>
   </div>
+  </div>
+
+  <!-- API Key Help Modal -->
+  <div class="help-overlay" id="apiKeyHelpOverlay">
+    <div class="help-modal">
+      <div class="help-modal__header">
+        <h3>NEIS 개인 인증키 발급 방법</h3>
+        <button class="help-modal__close" id="btnCloseApiKeyHelp">
+          <svg width="10" height="10" viewBox="0 0 10 10"><line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" stroke-width="1.5"/><line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" stroke-width="1.5"/></svg>
+        </button>
+      </div>
+      <div class="help-modal__body">
+        <div class="help-step">
+          <div class="help-step__number">1</div>
+          <div class="help-step__content">
+            <h4>NEIS 교육정보 개방 포털 접속</h4>
+            <p><a href="https://open.neis.go.kr" target="_blank">https://open.neis.go.kr</a> 에 접속합니다.</p>
+          </div>
+        </div>
+        <div class="help-step">
+          <div class="help-step__number">2</div>
+          <div class="help-step__content">
+            <h4>회원가입 및 로그인</h4>
+            <p>우측 상단의 <strong>"회원가입"</strong> 또는 <strong>"로그인"</strong>을 클릭하여 회원가입 후 로그인합니다.</p>
+            <p class="help-note">이메일 인증이 필요합니다.</p>
+          </div>
+        </div>
+        <div class="help-step">
+          <div class="help-step__number">3</div>
+          <div class="help-step__content">
+            <h4>인증키 신청</h4>
+            <p>로그인 후 상단 메뉴에서 <strong>"인증키 신청"</strong>을 클릭합니다.</p>
+            <div class="apikey-guide-box">
+              <div class="apikey-guide-field"><span class="apikey-guide-label">활용 용도</span> <span>교육 / 학교 대시보드 등</span></div>
+              <div class="apikey-guide-field"><span class="apikey-guide-label">활용 기간</span> <span>2년 (최대 선택)</span></div>
+            </div>
+            <p class="help-note">신청 후 즉시 인증키가 발급됩니다.</p>
+          </div>
+        </div>
+        <div class="help-step">
+          <div class="help-step__number">4</div>
+          <div class="help-step__content">
+            <h4>인증키 확인 및 복사</h4>
+            <p>상단 메뉴 <strong>"마이페이지"</strong> > <strong>"인증키 관리"</strong>에서 발급된 인증키를 복사합니다.</p>
+            <p class="help-note">인증키는 영문+숫자 32자리 형태입니다. (예: <code>abc123def456...</code>)</p>
+          </div>
+        </div>
+        <div class="help-step">
+          <div class="help-step__number">5</div>
+          <div class="help-step__content">
+            <h4>Wall-E에 입력</h4>
+            <p>"개인 인증키 사용"을 켜고, 복사한 인증키를 입력란에 붙여넣은 후 <strong>저장</strong>하세요.</p>
+            <p class="help-note">개인 인증키는 일일 <strong>10,000회</strong>까지 호출 가능합니다. (기본키는 1,000회)</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Update Modal -->

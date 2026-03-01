@@ -83,6 +83,8 @@ function getSettings(): Settings {
     latitude: 0,
     longitude: 0,
     spreadsheetUrl: "",
+    useCustomApiKey: false,
+    customApiKey: "",
     alarmEnabled: true,
     alarmSound: "classic",
     customAlarmData: "",
@@ -101,7 +103,7 @@ declare global {
           GetSettings(): Promise<Settings>;
           SaveSettings(s: Settings): Promise<void>;
           FetchDashboardData(): Promise<DashboardData>;
-          SearchSchool(name: string): Promise<any[]>;
+          SearchSchool(name: string): Promise<{ schools: any[]; error: string }>;
           GeocodeAddress(addr: string): Promise<any>;
           PickAlarmFile(): Promise<any>;
           PickBackgroundFile(): Promise<any>;

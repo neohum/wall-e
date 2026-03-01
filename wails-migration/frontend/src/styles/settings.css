@@ -20,7 +20,7 @@
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.7);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
-  max-width: 600px;
+  max-width: 680px;
   width: 100%;
   max-height: 85vh;
   display: flex;
@@ -67,7 +67,7 @@
 }
 
 .settings-container {
-  max-width: 540px;
+  max-width: 620px;
   width: 100%;
   margin: 0 auto;
   padding: 20px 20px;
@@ -337,9 +337,9 @@
 
 /* ===== Background Picker ===== */
 .bg-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .bg-thumb {
@@ -467,58 +467,21 @@
   color: var(--accent-cyan);
 }
 
-/* ===== Background Tab Bar ===== */
-.bg-tab-bar {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 10px;
-}
-
-.bg-tab-btn {
-  flex: 1;
-  padding: 6px 0;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.4);
+/* ===== Background Section Header ===== */
+.bg-section-header {
+  font-size: 0.75rem;
+  font-weight: 700;
   color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.18s;
+  margin-bottom: 8px;
+  padding-left: 2px;
+  letter-spacing: 0.02em;
 }
 
-.bg-tab-btn:hover {
-  background: rgba(59, 130, 246, 0.08);
-  color: var(--accent-cyan);
-}
-
-.bg-tab-btn.active {
-  background: rgba(59, 130, 246, 0.15);
-  color: var(--accent-cyan);
-  border-color: rgba(59, 130, 246, 0.35);
-}
-
-/* Content area under each tab */
+/* Content area for each category */
 .bg-tab-content {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 8px;
-  max-height: 220px;
-  overflow-y: auto;
-  padding-right: 2px;
-}
-
-.bg-tab-content::-webkit-scrollbar {
-  width: 4px;
-}
-
-.bg-tab-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.bg-tab-content::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.4);
-  border-radius: 2px;
 }
 
 /* Color swatches: square-ish ratio */
@@ -581,14 +544,18 @@
   opacity: 1;
 }
 
-/* Image tab: restore 4-col grid, different aspect ratio */
-.bg-tab-content:has(.bg-thumb--default),
-.bg-tab-content:has(.bg-thumb--add) {
+/* Image grid: 4-col, wide aspect ratio */
+.bg-tab-content--image {
   grid-template-columns: repeat(4, 1fr);
 }
 
-.bg-tab-content .bg-thumb:not(.bg-thumb--color) {
+.bg-tab-content--image .bg-thumb {
   aspect-ratio: 16 / 10;
+}
+
+/* Color grids: 7-col for more compact display */
+.bg-tab-content--color {
+  grid-template-columns: repeat(7, 1fr);
 }
 
 
@@ -852,6 +819,29 @@
 
 .help-share-step strong {
   color: var(--text-primary);
+}
+
+/* ===== API Key Guide ===== */
+.apikey-guide-box {
+  margin: 8px 0;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.apikey-guide-field {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  padding: 3px 0;
+  display: flex;
+  gap: 8px;
+}
+
+.apikey-guide-label {
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 70px;
 }
 
 /* ===== Alarm Sound Selection ===== */
