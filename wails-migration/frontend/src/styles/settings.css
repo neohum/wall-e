@@ -728,9 +728,13 @@
 }
 
 .alarm-preset-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 2px;
+}
+
+.custom-alarm-info {
+  grid-column: 1 / -1;
 }
 
 .alarm-preset-item {
