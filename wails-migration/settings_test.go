@@ -291,6 +291,7 @@ func TestSettingsJSONFieldNames(t *testing.T) {
 		"customAlarmData",
 		"customAlarmName",
 		"backgroundId",
+		"customBackgrounds",
 	}
 
 	for _, key := range expectedKeys {

@@ -88,6 +88,7 @@ function getSettings(): Settings {
     customAlarmData: "",
     customAlarmName: "",
     backgroundId: "",
+    customBackgrounds: [],
   };
 }
 
@@ -103,12 +104,18 @@ declare global {
           SearchSchool(name: string): Promise<any[]>;
           GeocodeAddress(addr: string): Promise<any>;
           PickAlarmFile(): Promise<any>;
+          PickBackgroundFile(): Promise<any>;
+          GetCustomBackgroundURL(id: string): Promise<string>;
+          RemoveCustomBackground(id: string): Promise<void>;
           GetAutoStart(): Promise<boolean>;
           SetAutoStart(enabled: boolean): Promise<void>;
           MinimizeWindow(): Promise<void>;
           MaximizeWindow(): Promise<void>;
           CloseWindow(): Promise<void>;
           GetNeisAPIKey(): Promise<string>;
+          GetAppVersion(): Promise<string>;
+          CheckForUpdate(): Promise<any>;
+          OpenDownloadURL(url: string): Promise<void>;
         };
       };
     };
@@ -126,6 +133,7 @@ export async function initDashboard(): Promise<void> {
 
   setupWindowControls();
   updateHeader();
+  updateAppVersion();
   applyBackground(cachedSettings);
   updateClock();
   await loadDashboardData();
@@ -172,14 +180,36 @@ function updateHeader(): void {
   }
 }
 
+// ===== App Version =====
+
+async function updateAppVersion(): Promise<void> {
+  const versionEl = $("#appVersion");
+  if (!versionEl) return;
+  const version = await window.go.main.App.GetAppVersion();
+  if (version) {
+    versionEl.textContent = `v${version}`;
+  }
+}
+
 // ===== Background =====
 
-function applyBackground(settings: Settings): void {
+async function applyBackground(settings: Settings): Promise<void> {
   const frame = document.querySelector(".window-frame") as HTMLElement;
   if (!frame) return;
 
   if (!settings.backgroundId) {
     frame.style.removeProperty("--bg-image");
+    return;
+  }
+
+  if (settings.backgroundId.startsWith("custom:")) {
+    const customId = settings.backgroundId.slice(7);
+    const dataURL = await window.go.main.App.GetCustomBackgroundURL(customId);
+    if (dataURL) {
+      frame.style.setProperty("--bg-image", `url('${dataURL}')`);
+    } else {
+      frame.style.removeProperty("--bg-image");
+    }
     return;
   }
 

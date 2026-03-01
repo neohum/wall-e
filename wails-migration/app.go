@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -239,6 +240,112 @@ func (a *App) PickAlarmFile() *AlarmFileResult {
 	return &AlarmFileResult{Data: dataURL, Name: name}
 }
 
+// ===== Custom Background =====
+
+type BackgroundFileResult struct {
+	Id       string `json:"id"`
+	Name     string `json:"name"`
+	FileName string `json:"fileName"`
+}
+
+func (a *App) PickBackgroundFile() *BackgroundFileResult {
+	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "배경 이미지 선택",
+		Filters: []runtime.FileFilter{
+			{DisplayName: "Image Files", Pattern: "*.jpg;*.jpeg;*.png;*.webp;*.bmp"},
+		},
+	})
+	if err != nil || path == "" {
+		return nil
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+
+	origName := filepath.Base(path)
+	ext := filepath.Ext(path)
+	id := uuid.New().String()
+	fileName := id + ext
+
+	bgDir := filepath.Join(settingsDir, "backgrounds")
+	if err := os.MkdirAll(bgDir, 0755); err != nil {
+		return nil
+	}
+
+	destPath := filepath.Join(bgDir, fileName)
+	if err := os.WriteFile(destPath, data, 0644); err != nil {
+		return nil
+	}
+
+	return &BackgroundFileResult{
+		Id:       id,
+		Name:     origName,
+		FileName: fileName,
+	}
+}
+
+func (a *App) GetCustomBackgroundURL(id string) string {
+	s := loadSettings()
+	for _, bg := range s.CustomBackgrounds {
+		if bg.Id == id {
+			bgPath := filepath.Join(settingsDir, "backgrounds", bg.FileName)
+			data, err := os.ReadFile(bgPath)
+			if err != nil {
+				return ""
+			}
+
+			ext := strings.ToLower(filepath.Ext(bg.FileName))
+			mimeType := mime.TypeByExtension(ext)
+			if mimeType == "" {
+				mimeMap := map[string]string{
+					".jpg":  "image/jpeg",
+					".jpeg": "image/jpeg",
+					".png":  "image/png",
+					".webp": "image/webp",
+					".bmp":  "image/bmp",
+				}
+				mimeType = mimeMap[ext]
+				if mimeType == "" {
+					mimeType = "image/jpeg"
+				}
+			}
+
+			b64 := base64.StdEncoding.EncodeToString(data)
+			return fmt.Sprintf("data:%s;base64,%s", mimeType, b64)
+		}
+	}
+	return ""
+}
+
+func (a *App) RemoveCustomBackground(id string) {
+	s := loadSettings()
+
+	var removed *CustomBackground
+	var remaining []CustomBackground
+	for _, bg := range s.CustomBackgrounds {
+		if bg.Id == id {
+			bgCopy := bg
+			removed = &bgCopy
+		} else {
+			remaining = append(remaining, bg)
+		}
+	}
+
+	if removed != nil {
+		bgPath := filepath.Join(settingsDir, "backgrounds", removed.FileName)
+		os.Remove(bgPath)
+	}
+
+	s.CustomBackgrounds = remaining
+	if s.BackgroundID == "custom:"+id {
+		s.BackgroundID = ""
+	}
+	saveSettings(s)
+	runtime.EventsEmit(a.ctx, "settingsChanged")
+}
+
 // ===== Auto Start =====
 
 func (a *App) GetAutoStart() bool {
@@ -265,6 +372,28 @@ func (a *App) CloseWindow() {
 
 func (a *App) GetNeisAPIKey() string {
 	return a.neisAPIKey
+}
+
+func (a *App) GetAppVersion() string {
+	return appVersion
+}
+
+// ===== Update Check =====
+
+type UpdateCheckResult struct {
+	UpdateAvailable bool   `json:"updateAvailable"`
+	CurrentVersion  string `json:"currentVersion"`
+	LatestVersion   string `json:"latestVersion"`
+	DownloadURL     string `json:"downloadURL"`
+	Error           string `json:"error"`
+}
+
+func (a *App) CheckForUpdate() UpdateCheckResult {
+	return checkForUpdate(appVersion)
+}
+
+func (a *App) OpenDownloadURL(url string) {
+	runtime.BrowserOpenURL(a.ctx, url)
 }
 
 // ===== Helpers =====

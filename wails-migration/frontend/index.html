@@ -40,6 +40,7 @@
           <circle cx="8" cy="7" r="2" stroke="currentColor" stroke-width="1.2"/>
         </svg>
       </button>
+      <div class="app-version" id="appVersion" style="--wails-draggable: no-drag"></div>
       <!-- Window Controls -->
       <div class="window-controls" style="--wails-draggable: no-drag">
         <button class="win-btn win-btn--minimize" id="btnMinimize" title="최소화">
@@ -201,7 +202,7 @@
         <!-- Timetable Source Section -->
         <section class="settings-section">
           <h2>
-            시간표 데이터 소스
+            시간표/행사/주간학습계획표 데이터 소스
             <button class="help-btn" id="btnHelp" title="스프레드시트 설정 가이드">?</button>
           </h2>
           <div class="form-group">
@@ -279,6 +280,15 @@
               <span>컴퓨터 시작 시 자동 실행</span>
             </label>
             <small>Windows 시작 시 Wall-E가 자동으로 실행됩니다</small>
+          </div>
+          <div class="form-group update-group">
+            <label>앱 업데이트</label>
+            <div class="update-row">
+              <span class="update-current-version" id="currentVersionLabel"></span>
+              <button type="button" id="btnCheckUpdate" class="btn btn-primary">업데이트 확인</button>
+              <button type="button" id="btnDownloadUpdate" class="btn btn-update" style="display:none;">다운로드</button>
+            </div>
+            <div class="update-status" id="updateStatus"></div>
           </div>
         </section>
 
@@ -380,6 +390,14 @@
               <div class="help-share-step">역할 → <strong>"뷰어"</strong></div>
             </div>
             <p>그 후 URL을 복사하여 위 입력란에 붙여넣으세요.</p>
+          </div>
+        </div>
+        <div class="help-step">
+          <div class="help-step__number">&#9733;</div>
+          <div class="help-step__content">
+            <h4>참고 시트</h4>
+            <p>아래 링크에서 실제 작성 예시를 확인할 수 있습니다. 사본을 만들어 사용하세요.</p>
+            <p><a href="https://docs.google.com/spreadsheets/d/1DBy7NqdFmVVhIs30B6bBY-LBzny3o3b-MPQxcwVjAGM/edit?usp=sharing" target="_blank">참고 스프레드시트 열기</a></p>
           </div>
         </div>
       </div>

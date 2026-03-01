@@ -1,7 +1,7 @@
 // ===== Settings Overlay Logic =====
 // Uses Wails bindings instead of Electrobun RPC
 
-import type { Settings } from "../types";
+import type { Settings, CustomBackground } from "../types";
 
 // ===== Background Presets =====
 
@@ -33,6 +33,7 @@ const BACKGROUNDS: BackgroundPreset[] = [
 let selectedBackgroundId = "";
 let pendingCustomAlarmData = "";
 let pendingCustomAlarmName = "";
+let customBackgrounds: CustomBackground[] = [];
 
 // ===== DOM Helpers =====
 
@@ -42,11 +43,19 @@ function $(id: string): HTMLInputElement | HTMLSelectElement {
 
 // ===== Background =====
 
-function applyWindowBackground(bgId: string): void {
+async function applyWindowBackground(bgId: string): Promise<void> {
   const frame = document.getElementById("windowFrame") as HTMLElement | null;
   if (!frame) return;
   if (!bgId) {
     frame.style.removeProperty("--bg-image");
+  } else if (bgId.startsWith("custom:")) {
+    const customId = bgId.slice(7);
+    const dataURL = await window.go.main.App.GetCustomBackgroundURL(customId);
+    if (dataURL) {
+      frame.style.setProperty("--bg-image", `url('${dataURL}')`);
+    } else {
+      frame.style.removeProperty("--bg-image");
+    }
   } else {
     frame.style.setProperty("--bg-image", `url('${BG_BASE}/${bgId}')`);
   }
@@ -58,6 +67,7 @@ function renderBackgroundPicker(): void {
 
   grid.innerHTML = "";
 
+  // Preset backgrounds
   for (const bg of BACKGROUNDS) {
     const thumb = document.createElement("div");
     thumb.className = `bg-thumb${bg.id === "" ? " bg-thumb--default" : ""}${bg.id === selectedBackgroundId ? " selected" : ""}`;
@@ -86,6 +96,78 @@ function renderBackgroundPicker(): void {
 
     grid.appendChild(thumb);
   }
+
+  // Custom backgrounds
+  for (const cb of customBackgrounds) {
+    const customBgId = `custom:${cb.id}`;
+    const thumb = document.createElement("div");
+    thumb.className = `bg-thumb bg-thumb--custom${customBgId === selectedBackgroundId ? " selected" : ""}`;
+    thumb.dataset.bgId = customBgId;
+    thumb.title = cb.name;
+
+    // Load thumbnail from backend
+    window.go.main.App.GetCustomBackgroundURL(cb.id).then((dataURL: string) => {
+      if (dataURL) {
+        const img = document.createElement("img");
+        img.src = dataURL;
+        img.alt = cb.name;
+        img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;";
+        thumb.insertBefore(img, thumb.firstChild);
+      }
+    });
+
+    // Delete button
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "bg-thumb__delete";
+    deleteBtn.innerHTML = "\u00D7";
+    deleteBtn.title = "삭제";
+    deleteBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await window.go.main.App.RemoveCustomBackground(cb.id);
+      customBackgrounds = customBackgrounds.filter((b) => b.id !== cb.id);
+      if (selectedBackgroundId === customBgId) {
+        selectedBackgroundId = "";
+        applyWindowBackground("");
+      }
+      renderBackgroundPicker();
+    });
+    thumb.appendChild(deleteBtn);
+
+    thumb.addEventListener("click", () => {
+      selectedBackgroundId = customBgId;
+      grid.querySelectorAll(".bg-thumb").forEach((el) => el.classList.remove("selected"));
+      thumb.classList.add("selected");
+      applyWindowBackground(customBgId);
+    });
+
+    grid.appendChild(thumb);
+  }
+
+  // Add custom background button
+  const addBtn = document.createElement("div");
+  addBtn.className = "bg-thumb bg-thumb--add";
+  addBtn.title = "이미지 추가";
+  addBtn.innerHTML = `<span>+</span>`;
+  addBtn.addEventListener("click", async () => {
+    const result = await window.go.main.App.PickBackgroundFile();
+    if (result) {
+      const newBg: CustomBackground = {
+        id: result.id,
+        name: result.name,
+        fileName: result.fileName,
+      };
+      customBackgrounds.push(newBg);
+      selectedBackgroundId = `custom:${newBg.id}`;
+
+      // Save immediately
+      const values = collectFormValues();
+      await window.go.main.App.SaveSettings(values);
+
+      renderBackgroundPicker();
+      applyWindowBackground(selectedBackgroundId);
+    }
+  });
+  grid.appendChild(addBtn);
 }
 
 // ===== Form =====
@@ -106,6 +188,7 @@ function loadFormValues(s: Settings): void {
 
   updateCustomAlarmDisplay(s.customAlarmName, s.customAlarmData);
 
+  customBackgrounds = s.customBackgrounds || [];
   selectedBackgroundId = s.backgroundId || "";
   applyWindowBackground(selectedBackgroundId);
   renderBackgroundPicker();
@@ -127,6 +210,7 @@ function collectFormValues(): Settings {
     customAlarmData: pendingCustomAlarmData,
     customAlarmName: pendingCustomAlarmName,
     backgroundId: selectedBackgroundId,
+    customBackgrounds: customBackgrounds,
   };
 }
 
@@ -394,6 +478,56 @@ export async function initSettings(): Promise<void> {
     }
   });
 
+  // Show current version
+  const versionLabel = document.getElementById("currentVersionLabel");
+  if (versionLabel) {
+    const ver = await window.go.main.App.GetAppVersion();
+    versionLabel.textContent = `v${ver}`;
+  }
+
+  // Manual update check
+  let latestDownloadURL = "";
+  document.getElementById("btnCheckUpdate")?.addEventListener("click", async () => {
+    const btn = document.getElementById("btnCheckUpdate") as HTMLButtonElement;
+    const statusEl = document.getElementById("updateStatus")!;
+    const downloadBtn = document.getElementById("btnDownloadUpdate") as HTMLButtonElement;
+
+    btn.disabled = true;
+    btn.textContent = "확인 중...";
+    statusEl.className = "update-status";
+    statusEl.textContent = "";
+    downloadBtn.style.display = "none";
+
+    try {
+      const result = await window.go.main.App.CheckForUpdate();
+
+      if (result.error) {
+        statusEl.textContent = `업데이트 확인 실패: ${result.error}`;
+        statusEl.className = "update-status error";
+      } else if (result.updateAvailable) {
+        statusEl.textContent = `v${result.latestVersion} 업데이트가 있습니다`;
+        statusEl.className = "update-status available";
+        latestDownloadURL = result.downloadURL;
+        downloadBtn.style.display = "inline-flex";
+      } else {
+        statusEl.textContent = "최신 버전입니다";
+        statusEl.className = "update-status latest";
+      }
+    } catch {
+      statusEl.textContent = "업데이트 확인 중 오류가 발생했습니다";
+      statusEl.className = "update-status error";
+    }
+
+    btn.disabled = false;
+    btn.textContent = "업데이트 확인";
+  });
+
+  document.getElementById("btnDownloadUpdate")?.addEventListener("click", () => {
+    if (latestDownloadURL) {
+      window.go.main.App.OpenDownloadURL(latestDownloadURL);
+    }
+  });
+
   // Save (uses Go backend)
   document.getElementById("saveBtn")!.addEventListener("click", async () => {
     const values = collectFormValues();
@@ -418,6 +552,7 @@ export async function initSettings(): Promise<void> {
         customAlarmData: "",
         customAlarmName: "",
         backgroundId: "",
+        customBackgrounds: [],
       };
       await window.go.main.App.SaveSettings(defaultSettings);
       const reloaded = await window.go.main.App.GetSettings();
