@@ -79,19 +79,27 @@ ShowInstDetails show # This will always show the installation details.
 
 Function .onInit
    !insertmacro wails.checkArchitecture
-FunctionEnd
 
-Function KillApp
-   ; Kill running Wall-E process before installing
-   ExecWait 'taskkill /F /IM "${PRODUCT_EXECUTABLE}"'
-   Sleep 2000
+   ; Check for existing installation and uninstall it first
+   SetRegView 64
+   ReadRegStr $0 HKLM "${UNINST_KEY}" "UninstallString"
+   ${If} $0 != ""
+     ; Kill running process
+     ExecWait 'taskkill /F /IM "${PRODUCT_EXECUTABLE}"'
+     Sleep 1000
+
+     ; Run existing uninstaller silently
+     ExecWait '$0 /S _?=$INSTDIR'
+     Sleep 1000
+   ${EndIf}
 FunctionEnd
 
 Section
     !insertmacro wails.setShellContext
 
-    ; Kill running process before overwriting files
-    Call KillApp
+    ; Kill running process before overwriting files (in case uninstall didn't catch it)
+    ExecWait 'taskkill /F /IM "${PRODUCT_EXECUTABLE}"'
+    Sleep 1000
 
     !insertmacro wails.webview2runtime
 
