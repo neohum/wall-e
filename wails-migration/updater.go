@@ -17,7 +17,7 @@ import (
 
 const (
 	githubRepo = "neohum/wall-e"
-	appVersion = "1.0.12"
+	appVersion = "1.0.13"
 )
 
 type githubRelease struct {

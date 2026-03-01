@@ -79,9 +79,11 @@
 .settings-container::-webkit-scrollbar {
   width: 4px;
 }
+
 .settings-container::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .settings-container::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.4);
   border-radius: 2px;
@@ -190,6 +192,7 @@
   color: var(--accent-cyan);
   text-decoration: none;
 }
+
 .form-group small a:hover {
   text-decoration: underline;
 }
@@ -324,11 +327,11 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
-.toggle-label input:checked + .toggle-switch {
+.toggle-label input:checked+.toggle-switch {
   background: rgba(59, 130, 246, 0.5);
 }
 
-.toggle-label input:checked + .toggle-switch::after {
+.toggle-label input:checked+.toggle-switch::after {
   transform: translateX(18px);
 }
 
@@ -464,6 +467,131 @@
   color: var(--accent-cyan);
 }
 
+/* ===== Background Tab Bar ===== */
+.bg-tab-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.bg-tab-btn {
+  flex: 1;
+  padding: 6px 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.bg-tab-btn:hover {
+  background: rgba(59, 130, 246, 0.08);
+  color: var(--accent-cyan);
+}
+
+.bg-tab-btn.active {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-cyan);
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+/* Content area under each tab */
+.bg-tab-content {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.bg-tab-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.bg-tab-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.bg-tab-content::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 2px;
+}
+
+/* Color swatches: square-ish ratio */
+.bg-thumb--color {
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  cursor: pointer;
+  position: relative;
+  border: 2px solid transparent;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+
+.bg-thumb--color:hover {
+  transform: scale(1.06);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+}
+
+.bg-thumb--color.selected {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35);
+}
+
+.bg-thumb--color.selected::after {
+  content: "\2713";
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--accent-cyan);
+  border-radius: 50%;
+  font-size: 0.6rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.bg-thumb__label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 3px 2px;
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  border-radius: 0 0 6px 6px;
+  line-height: 1.2;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+
+.bg-thumb--color:hover .bg-thumb__label {
+  opacity: 1;
+}
+
+/* Image tab: restore 4-col grid, different aspect ratio */
+.bg-tab-content:has(.bg-thumb--default),
+.bg-tab-content:has(.bg-thumb--add) {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.bg-tab-content .bg-thumb:not(.bg-thumb--color) {
+  aspect-ratio: 16 / 10;
+}
+
+
 /* ===== Actions ===== */
 .settings-actions {
   display: flex;
@@ -493,12 +621,22 @@
   border: 1px solid rgba(220, 38, 38, 0.25);
 }
 
+/* ===== Footer ===== */
+.settings-footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
 .search-results::-webkit-scrollbar {
   width: 4px;
 }
+
 .search-results::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .search-results::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.4);
   border-radius: 2px;
@@ -577,9 +715,11 @@
 .help-modal__body::-webkit-scrollbar {
   width: 4px;
 }
+
 .help-modal__body::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .help-modal__body::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.4);
   border-radius: 2px;

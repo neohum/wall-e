@@ -271,8 +271,17 @@ async function applyBackground(settings: Settings): Promise<void> {
 
   if (!settings.backgroundId) {
     frame.style.removeProperty("--bg-image");
+    frame.style.removeProperty("--bg-color");
     return;
   }
+
+  if (settings.backgroundId.startsWith("color:")) {
+    frame.style.removeProperty("--bg-image");
+    frame.style.setProperty("--bg-color", settings.backgroundId.slice(6));
+    return;
+  }
+
+  frame.style.removeProperty("--bg-color");
 
   if (settings.backgroundId.startsWith("custom:")) {
     const customId = settings.backgroundId.slice(7);
@@ -289,6 +298,7 @@ async function applyBackground(settings: Settings): Promise<void> {
   const url = `/assets/bg/${settings.backgroundId}`;
   frame.style.setProperty("--bg-image", `url('${url}')`);
 }
+
 
 // ===== Clock =====
 

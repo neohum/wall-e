@@ -1,63 +1,43 @@
+//go:build windows
+
 package main
 
 import (
 	"os"
-	"os/exec"
-	"path/filepath"
+
+	"golang.org/x/sys/windows/registry"
 )
 
-var (
-	startupFolder string
-	shortcutPath  string
-)
-
-func init() {
-	appData := os.Getenv("APPDATA")
-	if appData == "" {
-		home, _ := os.UserHomeDir()
-		appData = filepath.Join(home, "AppData", "Roaming")
-	}
-	startupFolder = filepath.Join(appData, "Microsoft", "Windows", "Start Menu", "Programs", "Startup")
-	shortcutPath = filepath.Join(startupFolder, "Wall-E.lnk")
-}
+const autoStartRegKey = `Software\Microsoft\Windows\CurrentVersion\Run`
+const autoStartAppName = "Wall-E"
 
 func getAutoStartEnabled() bool {
-	_, err := os.Stat(shortcutPath)
+	k, err := registry.OpenKey(registry.CURRENT_USER, autoStartRegKey, registry.QUERY_VALUE)
+	if err != nil {
+		return false
+	}
+	defer k.Close()
+
+	_, _, err = k.GetStringValue(autoStartAppName)
 	return err == nil
 }
 
 func setAutoStart(enabled bool) {
+	k, err := registry.OpenKey(registry.CURRENT_USER, autoStartRegKey, registry.SET_VALUE)
+	if err != nil {
+		return
+	}
+	defer k.Close()
+
 	if enabled {
 		exePath, err := os.Executable()
 		if err != nil {
 			return
 		}
-		workDir := filepath.Dir(exePath)
-
-		ps := `$ws = New-Object -ComObject WScript.Shell; ` +
-			`$s = $ws.CreateShortcut('` + escapePS(shortcutPath) + `'); ` +
-			`$s.TargetPath = '` + escapePS(exePath) + `'; ` +
-			`$s.WorkingDirectory = '` + escapePS(workDir) + `'; ` +
-			`$s.Description = 'Wall-E School Dashboard'; ` +
-			`$s.Save()`
-
-		cmd := exec.Command("powershell.exe", "-NoProfile", "-Command", ps)
-		cmd.Stdout = nil
-		cmd.Stderr = nil
-		_ = cmd.Run()
+		// Quote the path in case it contains spaces
+		quoted := `"` + exePath + `"`
+		_ = k.SetStringValue(autoStartAppName, quoted)
 	} else {
-		_ = os.Remove(shortcutPath)
+		_ = k.DeleteValue(autoStartAppName)
 	}
-}
-
-func escapePS(s string) string {
-	result := ""
-	for _, c := range s {
-		if c == '\'' {
-			result += "''"
-		} else {
-			result += string(c)
-		}
-	}
-	return result
 }

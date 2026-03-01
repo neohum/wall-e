@@ -55,7 +55,11 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background: var(--bg-image, none) center/cover no-repeat;
+  background: var(--bg-color, var(--bg-image, none)) center/cover no-repeat;
+  background-color: var(--bg-color, transparent);
+  background-image: var(--bg-image, none);
+  background-size: cover;
+  background-position: center;
   z-index: 0;
   border-radius: inherit;
 }

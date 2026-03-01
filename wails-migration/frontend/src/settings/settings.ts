@@ -14,6 +14,12 @@ interface BackgroundPreset {
   fallback: string;
 }
 
+interface ColorPreset {
+  id: string;   // e.g. "color:#FF5252"
+  label: string;
+  color: string;
+}
+
 const BACKGROUNDS: BackgroundPreset[] = [
   { id: "", label: "기본", fallback: "linear-gradient(135deg,#e8ecf4,#dde4f0)" },
   { id: "a-tranquil-sailboat-gliding-across-the-calm-azure-2026-02-28-11-49-53-utc.jpg", label: "요트", fallback: "linear-gradient(135deg,#74b9ff,#0984e3)" },
@@ -28,6 +34,54 @@ const BACKGROUNDS: BackgroundPreset[] = [
   { id: "piano-keyboard-closeup-digital-image-2026-01-08-00-29-44-utc.jpg", label: "피아노", fallback: "linear-gradient(135deg,#2d3436,#b2bec3)" },
   { id: "sand-beach-aerial-top-view-of-a-beautiful-sandy-b-2026-01-09-13-04-43-utc.jpg", label: "모래 해변", fallback: "linear-gradient(135deg,#f9ca24,#74b9ff)" },
   { id: "wadi-rum-desert-jordan-stars-shine-over-desert-l-2026-01-20-23-17-14-utc.jpg", label: "사막의 별", fallback: "linear-gradient(135deg,#1a1a2e,#f9ca24)" },
+];
+
+// Vivid / primary colors (20)
+const VIVID_COLORS: ColorPreset[] = [
+  { id: "color:#F44336", label: "레드", color: "#F44336" },
+  { id: "color:#E91E63", label: "핑크", color: "#E91E63" },
+  { id: "color:#9C27B0", label: "퍼플", color: "#9C27B0" },
+  { id: "color:#673AB7", label: "딥퍼플", color: "#673AB7" },
+  { id: "color:#3F51B5", label: "인디고", color: "#3F51B5" },
+  { id: "color:#2196F3", label: "블루", color: "#2196F3" },
+  { id: "color:#03A9F4", label: "라이트블루", color: "#03A9F4" },
+  { id: "color:#00BCD4", label: "시안", color: "#00BCD4" },
+  { id: "color:#009688", label: "틸", color: "#009688" },
+  { id: "color:#4CAF50", label: "그린", color: "#4CAF50" },
+  { id: "color:#8BC34A", label: "라이트그린", color: "#8BC34A" },
+  { id: "color:#CDDC39", label: "라임", color: "#CDDC39" },
+  { id: "color:#FFEB3B", label: "옐로우", color: "#FFEB3B" },
+  { id: "color:#FFC107", label: "앰버", color: "#FFC107" },
+  { id: "color:#FF9800", label: "오렌지", color: "#FF9800" },
+  { id: "color:#FF5722", label: "딥오렌지", color: "#FF5722" },
+  { id: "color:#795548", label: "브라운", color: "#795548" },
+  { id: "color:#607D8B", label: "블루그레이", color: "#607D8B" },
+  { id: "color:#212121", label: "블랙", color: "#212121" },
+  { id: "color:#FFFFFF", label: "화이트", color: "#FFFFFF" },
+];
+
+// Pastel colors (20)
+const PASTEL_COLORS: ColorPreset[] = [
+  { id: "color:#FFCDD2", label: "베이비핑크", color: "#FFCDD2" },
+  { id: "color:#F8BBD0", label: "라이트핑크", color: "#F8BBD0" },
+  { id: "color:#E1BEE7", label: "라벤더", color: "#E1BEE7" },
+  { id: "color:#D1C4E9", label: "라일락", color: "#D1C4E9" },
+  { id: "color:#C5CAE9", label: "페리윙클", color: "#C5CAE9" },
+  { id: "color:#BBDEFB", label: "베이비블루", color: "#BBDEFB" },
+  { id: "color:#B3E5FC", label: "스카이블루", color: "#B3E5FC" },
+  { id: "color:#B2EBF2", label: "아이스블루", color: "#B2EBF2" },
+  { id: "color:#B2DFDB", label: "민트", color: "#B2DFDB" },
+  { id: "color:#C8E6C9", label: "민트그린", color: "#C8E6C9" },
+  { id: "color:#DCEDC8", label: "연두", color: "#DCEDC8" },
+  { id: "color:#F0F4C3", label: "크림옐로우", color: "#F0F4C3" },
+  { id: "color:#FFF9C4", label: "버터", color: "#FFF9C4" },
+  { id: "color:#FFECB3", label: "샴페인", color: "#FFECB3" },
+  { id: "color:#FFE0B2", label: "피치", color: "#FFE0B2" },
+  { id: "color:#FFCCBC", label: "살몬", color: "#FFCCBC" },
+  { id: "color:#D7CCC8", label: "로즈우드", color: "#D7CCC8" },
+  { id: "color:#CFD8DC", label: "실버", color: "#CFD8DC" },
+  { id: "color:#F5F5F5", label: "오프화이트", color: "#F5F5F5" },
+  { id: "color:#FFEEFF", label: "블러쉬", color: "#FFEEFF" },
 ];
 
 let selectedBackgroundId = "";
@@ -48,7 +102,12 @@ async function applyWindowBackground(bgId: string): Promise<void> {
   if (!frame) return;
   if (!bgId) {
     frame.style.removeProperty("--bg-image");
+    frame.style.removeProperty("--bg-color");
+  } else if (bgId.startsWith("color:")) {
+    frame.style.removeProperty("--bg-image");
+    frame.style.setProperty("--bg-color", bgId.slice(6));
   } else if (bgId.startsWith("custom:")) {
+    frame.style.removeProperty("--bg-color");
     const customId = bgId.slice(7);
     const dataURL = await window.go.main.App.GetCustomBackgroundURL(customId);
     if (dataURL) {
@@ -57,117 +116,179 @@ async function applyWindowBackground(bgId: string): Promise<void> {
       frame.style.removeProperty("--bg-image");
     }
   } else {
+    frame.style.removeProperty("--bg-color");
     frame.style.setProperty("--bg-image", `url('${BG_BASE}/${bgId}')`);
   }
 }
 
+type BgTab = "image" | "vivid" | "pastel";
+let activeBgTab: BgTab = "image";
+
+function renderColorGrid(container: HTMLElement, colors: ColorPreset[]): void {
+  for (const c of colors) {
+    const thumb = document.createElement("div");
+    thumb.className = `bg-thumb bg-thumb--color${c.id === selectedBackgroundId ? " selected" : ""}`;
+    thumb.dataset.bgId = c.id;
+    thumb.title = c.label;
+    thumb.style.background = c.color;
+    // Dark border for white-ish colors
+    if (c.color.toUpperCase() === "#FFFFFF" || c.color.toUpperCase() === "#F5F5F5" ||
+      c.color.toUpperCase() === "#FFEEFF" || c.color.toUpperCase() === "#FFF9C4" ||
+      c.color.toUpperCase() === "#FFECB3" || c.color.toUpperCase() === "#F0F4C3" ||
+      c.color.toUpperCase() === "#DCEDC8") {
+      thumb.style.outline = "1px solid rgba(0,0,0,0.15)";
+    }
+    thumb.innerHTML = `<span class="bg-thumb__label">${c.label}</span>`;
+    thumb.addEventListener("click", () => {
+      selectedBackgroundId = c.id;
+      container.querySelectorAll(".bg-thumb").forEach((el) => el.classList.remove("selected"));
+      thumb.classList.add("selected");
+      applyWindowBackground(c.id);
+    });
+    container.appendChild(thumb);
+  }
+}
+
 function renderBackgroundPicker(): void {
-  const grid = document.getElementById("backgroundGrid");
-  if (!grid) return;
+  const wrapper = document.getElementById("backgroundGrid");
+  if (!wrapper) return;
 
-  grid.innerHTML = "";
+  wrapper.innerHTML = "";
 
-  // Preset backgrounds
-  for (const bg of BACKGROUNDS) {
-    const thumb = document.createElement("div");
-    thumb.className = `bg-thumb${bg.id === "" ? " bg-thumb--default" : ""}${bg.id === selectedBackgroundId ? " selected" : ""}`;
-    thumb.dataset.bgId = bg.id;
-    thumb.title = bg.label;
-    thumb.style.background = bg.fallback;
+  // ---- Tab Bar ----
+  const tabBar = document.createElement("div");
+  tabBar.className = "bg-tab-bar";
 
-    if (bg.id === "") {
-      thumb.innerHTML = `<span>${bg.label}</span>`;
-    } else {
-      const img = document.createElement("img");
-      img.src = `${BG_THUMB}/${bg.id}`;
-      img.alt = bg.label;
-      img.loading = "lazy";
-      img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;";
-      img.onerror = () => { img.style.display = "none"; };
-      thumb.appendChild(img);
-    }
+  const tabs: { key: BgTab; label: string }[] = [
+    { key: "image", label: "이미지" },
+    { key: "vivid", label: "원색" },
+    { key: "pastel", label: "파스텔" },
+  ];
 
-    thumb.addEventListener("click", () => {
-      selectedBackgroundId = bg.id;
-      grid.querySelectorAll(".bg-thumb").forEach((el) => el.classList.remove("selected"));
-      thumb.classList.add("selected");
-      applyWindowBackground(bg.id);
-    });
+  const contentEl = document.createElement("div");
+  contentEl.className = "bg-tab-content";
 
-    grid.appendChild(thumb);
-  }
-
-  // Custom backgrounds
-  for (const cb of customBackgrounds) {
-    const customBgId = `custom:${cb.id}`;
-    const thumb = document.createElement("div");
-    thumb.className = `bg-thumb bg-thumb--custom${customBgId === selectedBackgroundId ? " selected" : ""}`;
-    thumb.dataset.bgId = customBgId;
-    thumb.title = cb.name;
-
-    // Load thumbnail from backend
-    window.go.main.App.GetCustomBackgroundURL(cb.id).then((dataURL: string) => {
-      if (dataURL) {
-        const img = document.createElement("img");
-        img.src = dataURL;
-        img.alt = cb.name;
-        img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;";
-        thumb.insertBefore(img, thumb.firstChild);
-      }
-    });
-
-    // Delete button
-    const deleteBtn = document.createElement("button");
-    deleteBtn.className = "bg-thumb__delete";
-    deleteBtn.innerHTML = "\u00D7";
-    deleteBtn.title = "삭제";
-    deleteBtn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      await window.go.main.App.RemoveCustomBackground(cb.id);
-      customBackgrounds = customBackgrounds.filter((b) => b.id !== cb.id);
-      if (selectedBackgroundId === customBgId) {
-        selectedBackgroundId = "";
-        applyWindowBackground("");
-      }
+  tabs.forEach(({ key, label }) => {
+    const btn = document.createElement("button");
+    btn.className = `bg-tab-btn${activeBgTab === key ? " active" : ""}`;
+    btn.textContent = label;
+    btn.addEventListener("click", () => {
+      activeBgTab = key;
       renderBackgroundPicker();
     });
-    thumb.appendChild(deleteBtn);
-
-    thumb.addEventListener("click", () => {
-      selectedBackgroundId = customBgId;
-      grid.querySelectorAll(".bg-thumb").forEach((el) => el.classList.remove("selected"));
-      thumb.classList.add("selected");
-      applyWindowBackground(customBgId);
-    });
-
-    grid.appendChild(thumb);
-  }
-
-  // Add custom background button
-  const addBtn = document.createElement("div");
-  addBtn.className = "bg-thumb bg-thumb--add";
-  addBtn.title = "이미지 추가";
-  addBtn.innerHTML = `<span>+</span>`;
-  addBtn.addEventListener("click", async () => {
-    const result = await window.go.main.App.PickBackgroundFile();
-    if (result) {
-      const newBg: CustomBackground = {
-        id: result.id,
-        name: result.name,
-        fileName: result.fileName,
-      };
-      customBackgrounds.push(newBg);
-      selectedBackgroundId = `custom:${newBg.id}`;
-
-      // Save immediately
-      const values = collectFormValues();
-      await window.go.main.App.SaveSettings(values);
-
-      renderBackgroundPicker();
-      applyWindowBackground(selectedBackgroundId);
-    }
+    tabBar.appendChild(btn);
   });
-  grid.appendChild(addBtn);
+
+  wrapper.appendChild(tabBar);
+
+  // ---- Tab Content ----
+  contentEl.innerHTML = "";
+
+  if (activeBgTab === "image") {
+    // Preset image backgrounds
+    for (const bg of BACKGROUNDS) {
+      const thumb = document.createElement("div");
+      thumb.className = `bg-thumb${bg.id === "" ? " bg-thumb--default" : ""}${bg.id === selectedBackgroundId ? " selected" : ""}`;
+      thumb.dataset.bgId = bg.id;
+      thumb.title = bg.label;
+      thumb.style.background = bg.fallback;
+
+      if (bg.id === "") {
+        thumb.innerHTML = `<span>${bg.label}</span>`;
+      } else {
+        const img = document.createElement("img");
+        img.src = `${BG_THUMB}/${bg.id}`;
+        img.alt = bg.label;
+        img.loading = "lazy";
+        img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;";
+        img.onerror = () => { img.style.display = "none"; };
+        thumb.appendChild(img);
+      }
+
+      thumb.addEventListener("click", () => {
+        selectedBackgroundId = bg.id;
+        contentEl.querySelectorAll(".bg-thumb").forEach((el) => el.classList.remove("selected"));
+        thumb.classList.add("selected");
+        applyWindowBackground(bg.id);
+      });
+
+      contentEl.appendChild(thumb);
+    }
+
+    // Custom backgrounds
+    for (const cb of customBackgrounds) {
+      const customBgId = `custom:${cb.id}`;
+      const thumb = document.createElement("div");
+      thumb.className = `bg-thumb bg-thumb--custom${customBgId === selectedBackgroundId ? " selected" : ""}`;
+      thumb.dataset.bgId = customBgId;
+      thumb.title = cb.name;
+
+      window.go.main.App.GetCustomBackgroundURL(cb.id).then((dataURL: string) => {
+        if (dataURL) {
+          const img = document.createElement("img");
+          img.src = dataURL;
+          img.alt = cb.name;
+          img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;";
+          thumb.insertBefore(img, thumb.firstChild);
+        }
+      });
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "bg-thumb__delete";
+      deleteBtn.innerHTML = "\u00D7";
+      deleteBtn.title = "삭제";
+      deleteBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        await window.go.main.App.RemoveCustomBackground(cb.id);
+        customBackgrounds = customBackgrounds.filter((b) => b.id !== cb.id);
+        if (selectedBackgroundId === customBgId) {
+          selectedBackgroundId = "";
+          applyWindowBackground("");
+        }
+        renderBackgroundPicker();
+      });
+      thumb.appendChild(deleteBtn);
+
+      thumb.addEventListener("click", () => {
+        selectedBackgroundId = customBgId;
+        contentEl.querySelectorAll(".bg-thumb").forEach((el) => el.classList.remove("selected"));
+        thumb.classList.add("selected");
+        applyWindowBackground(customBgId);
+      });
+
+      contentEl.appendChild(thumb);
+    }
+
+    // Add custom background button
+    const addBtn = document.createElement("div");
+    addBtn.className = "bg-thumb bg-thumb--add";
+    addBtn.title = "이미지 추가";
+    addBtn.innerHTML = `<span>+</span>`;
+    addBtn.addEventListener("click", async () => {
+      const result = await window.go.main.App.PickBackgroundFile();
+      if (result) {
+        const newBg: CustomBackground = {
+          id: result.id,
+          name: result.name,
+          fileName: result.fileName,
+        };
+        customBackgrounds.push(newBg);
+        selectedBackgroundId = `custom:${newBg.id}`;
+        const values = collectFormValues();
+        await window.go.main.App.SaveSettings(values);
+        renderBackgroundPicker();
+        applyWindowBackground(selectedBackgroundId);
+      }
+    });
+    contentEl.appendChild(addBtn);
+
+  } else if (activeBgTab === "vivid") {
+    renderColorGrid(contentEl, VIVID_COLORS);
+  } else {
+    renderColorGrid(contentEl, PASTEL_COLORS);
+  }
+
+  wrapper.appendChild(contentEl);
 }
 
 // ===== Form =====
