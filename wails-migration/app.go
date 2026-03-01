@@ -395,7 +395,7 @@ func (a *App) CheckForUpdate() UpdateCheckResult {
 // DownloadAndRunUpdate downloads the setup exe and runs it silently.
 // Returns an empty string on success, or an error message.
 func (a *App) DownloadAndRunUpdate(url string) string {
-	return downloadAndRunUpdate(url)
+	return downloadAndRunUpdate(a.ctx, url)
 }
 
 func (a *App) OpenDownloadURL(url string) {

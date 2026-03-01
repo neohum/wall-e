@@ -853,3 +853,31 @@ body {
 .update-modal__actions .btn-secondary:hover {
   background: rgba(0, 0, 0, 0.1);
 }
+
+/* ===== Download Progress Bar ===== */
+.update-modal__progress {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.progress-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.progress-bar__fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent-cyan);
+  border-radius: 4px;
+  transition: width 0.2s ease;
+}
+
+.progress-bar__text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 6px;
+}

@@ -189,12 +189,28 @@ async function checkForUpdateOnStartup(): Promise<void> {
       btnLater.style.display = "none";
       statusEl.textContent = "설치 파일을 다운로드하는 중입니다...";
 
+      // Show progress bar and listen for progress events
+      const progressEl = document.getElementById("updateProgress");
+      const fillEl = document.getElementById("progressFill");
+      const textEl = document.getElementById("progressText");
+      if (progressEl) progressEl.style.display = "";
+
+      const formatMB = (bytes: number): string => (bytes / (1024 * 1024)).toFixed(1) + "MB";
+
+      window.runtime.EventsOn("downloadProgress", (percent: number, downloaded: number, total: number) => {
+        if (fillEl) fillEl.style.width = percent + "%";
+        if (textEl) textEl.textContent = `${percent}% \u00B7 ${formatMB(downloaded)} / ${formatMB(total)}`;
+      });
+
       const errMsg = await window.go.main.App.DownloadAndRunUpdate(downloadURL);
+      window.runtime.EventsOff("downloadProgress");
+
       if (errMsg) {
         statusEl.textContent = `실패: ${errMsg}`;
         btnNow.disabled = false;
         btnNow.textContent = "업데이트";
         btnLater.style.display = "";
+        if (progressEl) progressEl.style.display = "none";
       } else {
         statusEl.textContent = "설치 프로그램이 실행됩니다. 잠시 후 앱이 다시 시작됩니다.";
       }
