@@ -11,6 +11,7 @@ export interface Settings {
   spreadsheetUrl: string;
   neisApiKey: string;
   alarmEnabled: boolean;
+  alarmPopupEnabled: boolean;
   alarmSound: string;
   customAlarmData: string;
   customAlarmName: string;

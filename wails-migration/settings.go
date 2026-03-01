@@ -7,20 +7,27 @@ import (
 	"sync"
 )
 
+type CustomBackground struct {
+	Id       string `json:"id"`
+	Name     string `json:"name"`
+	FileName string `json:"fileName"`
+}
+
 type Settings struct {
-	SchoolName      string  `json:"schoolName"`
-	SchoolCode      string  `json:"schoolCode"`
-	OfficeCode      string  `json:"officeCode"`
-	Grade           int     `json:"grade"`
-	ClassNum        int     `json:"classNum"`
-	Latitude        float64 `json:"latitude"`
-	Longitude       float64 `json:"longitude"`
-	SpreadsheetURL  string  `json:"spreadsheetUrl"`
-	AlarmEnabled    bool    `json:"alarmEnabled"`
-	AlarmSound      string  `json:"alarmSound"`
-	CustomAlarmData string  `json:"customAlarmData"`
-	CustomAlarmName string  `json:"customAlarmName"`
-	BackgroundID    string  `json:"backgroundId"`
+	SchoolName        string             `json:"schoolName"`
+	SchoolCode        string             `json:"schoolCode"`
+	OfficeCode        string             `json:"officeCode"`
+	Grade             int                `json:"grade"`
+	ClassNum          int                `json:"classNum"`
+	Latitude          float64            `json:"latitude"`
+	Longitude         float64            `json:"longitude"`
+	SpreadsheetURL    string             `json:"spreadsheetUrl"`
+	AlarmEnabled      bool               `json:"alarmEnabled"`
+	AlarmSound        string             `json:"alarmSound"`
+	CustomAlarmData   string             `json:"customAlarmData"`
+	CustomAlarmName   string             `json:"customAlarmName"`
+	BackgroundID      string             `json:"backgroundId"`
+	CustomBackgrounds []CustomBackground `json:"customBackgrounds"`
 }
 
 var defaultSettings = Settings{

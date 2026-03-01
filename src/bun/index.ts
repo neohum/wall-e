@@ -18,6 +18,7 @@ interface Settings {
   longitude: number;
   spreadsheetUrl: string;
   alarmEnabled: boolean;
+  alarmPopupEnabled: boolean;
   alarmSound: string;
   customAlarmData: string;
   customAlarmName: string;
@@ -34,6 +35,7 @@ const DEFAULT_SETTINGS: Settings = {
   longitude: 0,
   spreadsheetUrl: "",
   alarmEnabled: true,
+  alarmPopupEnabled: true,
   alarmSound: "classic",
   customAlarmData: "",
   customAlarmName: "",
@@ -101,7 +103,6 @@ if (!getAutoStartEnabled()) {
 // ===== NEIS API key (build-time injected) =====
 const ENV_NEIS_API_KEY: string = process.env.NEIS_API_KEY ?? "";
 
-// Type for dashboard window RPC
 type WindowRPC = {
   bun: {
     requests: {
@@ -410,7 +411,11 @@ function openSettings() {
     handlers: {
       requests: {
         closeSettings: () => {
-          settingsWindow?.close();
+          // Set to null BEFORE calling close() so Electrobun's window-close event
+          // doesn't see 0 open windows and call quit().
+          const win = settingsWindow;
+          settingsWindow = null;
+          win?.close();
         },
         getSettings: () => {
           return getSettingsWithKey();
@@ -495,7 +500,7 @@ function openSettings() {
             return null;
           }
         },
-        checkForUpdate: async () => {
+        checkForUpdate: async (): Promise<UpdateCheckResult> => {
           return await autoUpdater.checkForUpdate();
         },
         applyUpdate: async () => {

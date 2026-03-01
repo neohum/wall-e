@@ -93,6 +93,7 @@ const DEFAULT_SETTINGS: Settings = {
   spreadsheetUrl: "",
   neisApiKey: "",
   alarmEnabled: true,
+  alarmPopupEnabled: true,
   alarmSound: "classic",
   customAlarmData: "",
   customAlarmName: "",
@@ -170,6 +171,8 @@ function setupWindowControls(): void {
   document.getElementById("btnSettings")?.addEventListener("click", () => {
     rpc.request.openSettings();
   });
+
+  document.getElementById("alarmPopupDismiss")?.addEventListener("click", dismissAlarmPopup);
 }
 
 // ===== Header =====
@@ -390,6 +393,22 @@ async function loadDashboardData(): Promise<void> {
 
 let alarmPopupTimeout: ReturnType<typeof setTimeout> | null = null;
 
+function dismissAlarmPopup(): void {
+  const popup = document.getElementById("alarmPopup");
+  if (!popup) return;
+
+  if (alarmPopupTimeout) {
+    clearTimeout(alarmPopupTimeout);
+    alarmPopupTimeout = null;
+  }
+
+  popup.classList.add("fade-out");
+  popup.classList.remove("visible");
+  setTimeout(() => {
+    popup.className = "alarm-popup";
+  }, 400);
+}
+
 function showAlarmPopup(event: AlarmEvent): void {
   const popup = document.getElementById("alarmPopup");
   const iconEl = document.getElementById("alarmPopupIcon");
@@ -407,6 +426,7 @@ function showAlarmPopup(event: AlarmEvent): void {
 
   let icon: string;
   let text: string;
+  const needsDismiss = event.type === "start" || event.type === "end";
 
   switch (event.type) {
     case "start":
@@ -429,17 +449,18 @@ function showAlarmPopup(event: AlarmEvent): void {
   iconEl.textContent = icon;
   textEl.textContent = text;
 
+  // Show dismiss button for start/end, hide for warning
+  if (needsDismiss) {
+    popup.classList.add("has-dismiss");
+  }
+
   // Show popup
   popup.classList.add("visible");
 
-  // Auto-hide after 5 seconds
-  alarmPopupTimeout = setTimeout(() => {
-    popup.classList.add("fade-out");
-    popup.classList.remove("visible");
-    setTimeout(() => {
-      popup.className = "alarm-popup";
-    }, 400);
-  }, 5000);
+  if (!needsDismiss) {
+    // Warning: auto-hide after 5 seconds
+    alarmPopupTimeout = setTimeout(dismissAlarmPopup, 5000);
+  }
 }
 
 // ===== Update Loop =====
@@ -453,7 +474,7 @@ function startUpdateLoop(): void {
     const settings = getSettings();
     const periods = getPeriods(dashboardData?.timetable ?? null);
     const alarmEvent = checkAndPlayAlarms(periods, settings.alarmEnabled, settings.alarmSound, settings.customAlarmData);
-    if (alarmEvent) {
+    if (alarmEvent && settings.alarmPopupEnabled !== false) {
       showAlarmPopup(alarmEvent);
     }
     resetAlarmsIfNewDay();

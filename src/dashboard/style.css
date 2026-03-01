@@ -676,6 +676,28 @@ body {
   color: #b45309;
 }
 
+.alarm-popup__dismiss {
+  display: none;
+  margin-top: 4px;
+  padding: 6px 32px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent-cyan);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.alarm-popup__dismiss:hover {
+  background: #2563eb;
+}
+
+.alarm-popup.has-dismiss .alarm-popup__dismiss {
+  display: inline-block;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 900px) {
   .main-content {

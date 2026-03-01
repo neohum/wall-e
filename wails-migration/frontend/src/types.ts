@@ -14,6 +14,13 @@ export interface Settings {
   customAlarmData: string;
   customAlarmName: string;
   backgroundId: string;
+  customBackgrounds: CustomBackground[];
+}
+
+export interface CustomBackground {
+  id: string;
+  name: string;
+  fileName: string;
 }
 
 export interface WeatherData {
@@ -88,6 +95,12 @@ export interface Coords {
 export interface AlarmFileResult {
   data: string;
   name: string;
+}
+
+export interface BackgroundFileResult {
+  id: string;
+  name: string;
+  fileName: string;
 }
 
 export type AirQualityLevel = "good" | "moderate" | "unhealthy" | "very-unhealthy";

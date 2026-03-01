@@ -98,6 +98,16 @@ body {
   white-space: nowrap;
 }
 
+.app-version {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  background: rgba(148, 163, 184, 0.15);
+  padding: 2px 7px;
+  border-radius: 8px;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
 .class-info {
   font-size: 0.85rem;
   color: var(--text-secondary);

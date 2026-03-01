@@ -14,6 +14,7 @@ interface Settings {
   longitude: number;
   spreadsheetUrl: string;
   alarmEnabled: boolean;
+  alarmPopupEnabled: boolean;
   alarmSound: string;
   customAlarmData: string;
   customAlarmName: string;
@@ -79,6 +80,7 @@ const DEFAULT_SETTINGS: Settings = {
   longitude: 0,
   spreadsheetUrl: "",
   alarmEnabled: true,
+  alarmPopupEnabled: true,
   alarmSound: "classic",
   customAlarmData: "",
   customAlarmName: "",
@@ -188,6 +190,7 @@ function loadFormValues(s: SettingsWithKey): void {
   ($("longitude") as HTMLInputElement).value = String(s.longitude);
   $("spreadsheetUrl").value = s.spreadsheetUrl;
   ($("alarmEnabled") as HTMLInputElement).checked = s.alarmEnabled;
+  ($("alarmPopupEnabled") as HTMLInputElement).checked = s.alarmPopupEnabled !== false;
 
   // Alarm sound preset
   const radio = document.querySelector(`input[name="alarmSound"][value="${s.alarmSound || "classic"}"]`) as HTMLInputElement | null;
@@ -216,6 +219,7 @@ function collectFormValues(): Settings {
     longitude: parseFloat(($("longitude") as HTMLInputElement).value) || 0,
     spreadsheetUrl: $("spreadsheetUrl").value.trim(),
     alarmEnabled: ($("alarmEnabled") as HTMLInputElement).checked,
+    alarmPopupEnabled: ($("alarmPopupEnabled") as HTMLInputElement).checked,
     alarmSound: selectedRadio?.value || "classic",
     customAlarmData: pendingCustomAlarmData,
     customAlarmName: pendingCustomAlarmName,
