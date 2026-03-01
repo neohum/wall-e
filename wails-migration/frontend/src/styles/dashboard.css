@@ -761,3 +761,95 @@ body {
 .alarm-popup.alarm-warning .alarm-popup__text {
   color: #b45309;
 }
+
+/* ===== Update Modal ===== */
+.update-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.update-overlay.visible {
+  display: flex;
+}
+
+.update-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 48px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18);
+  min-width: 320px;
+}
+
+.update-modal__icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.update-modal__title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.update-modal__version {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.update-modal__status {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+  min-height: 1.2em;
+}
+
+.update-modal__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.update-modal__actions .btn {
+  padding: 8px 24px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+}
+
+.update-modal__actions .btn-primary {
+  background: var(--accent-cyan);
+  color: #fff;
+}
+
+.update-modal__actions .btn-primary:hover {
+  filter: brightness(1.1);
+}
+
+.update-modal__actions .btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.update-modal__actions .btn-secondary {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text-secondary);
+}
+
+.update-modal__actions .btn-secondary:hover {
+  background: rgba(0, 0, 0, 0.1);
+}

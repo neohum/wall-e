@@ -140,6 +140,9 @@ export async function initDashboard(): Promise<void> {
   await loadDashboardData();
   startUpdateLoop();
 
+  // Auto update check on startup
+  checkForUpdateOnStartup();
+
   // Listen for settings changes from Go backend
   window.runtime.EventsOn("settingsChanged", async () => {
     cachedSettings = await window.go.main.App.GetSettings();
@@ -147,6 +150,58 @@ export async function initDashboard(): Promise<void> {
     applyBackground(cachedSettings);
     loadDashboardData();
   });
+}
+
+// ===== Auto Update Check =====
+
+async function checkForUpdateOnStartup(): Promise<void> {
+  try {
+    const result = await window.go.main.App.CheckForUpdate();
+    if (!result || !result.updateAvailable) return;
+
+    const overlay = document.getElementById("updateOverlay");
+    const versionInfo = document.getElementById("updateVersionInfo");
+    const statusEl = document.getElementById("updateModalStatus");
+    const btnNow = document.getElementById("btnUpdateNow") as HTMLButtonElement;
+    const btnLater = document.getElementById("btnUpdateLater") as HTMLButtonElement;
+    if (!overlay || !versionInfo || !statusEl || !btnNow || !btnLater) return;
+
+    versionInfo.textContent = `v${result.currentVersion} → v${result.latestVersion}`;
+    statusEl.textContent = "";
+    overlay.classList.add("visible");
+
+    const downloadURL = result.downloadURL || "";
+
+    btnLater.addEventListener("click", () => {
+      overlay.classList.remove("visible");
+    });
+
+    btnNow.addEventListener("click", async () => {
+      if (!downloadURL) {
+        // Fallback: open release page
+        window.go.main.App.OpenDownloadURL(result.downloadURL || `https://github.com/neohum/wall-e/releases/latest`);
+        overlay.classList.remove("visible");
+        return;
+      }
+
+      btnNow.disabled = true;
+      btnNow.textContent = "다운로드 중...";
+      btnLater.style.display = "none";
+      statusEl.textContent = "설치 파일을 다운로드하는 중입니다...";
+
+      const errMsg = await window.go.main.App.DownloadAndRunUpdate(downloadURL);
+      if (errMsg) {
+        statusEl.textContent = `실패: ${errMsg}`;
+        btnNow.disabled = false;
+        btnNow.textContent = "업데이트";
+        btnLater.style.display = "";
+      } else {
+        statusEl.textContent = "설치 프로그램이 실행됩니다. 잠시 후 앱이 다시 시작됩니다.";
+      }
+    });
+  } catch {
+    // Silently ignore update check failures
+  }
 }
 
 // ===== Window Controls =====
