@@ -64,68 +64,80 @@
   </header>
 
   <!-- Main Content (Dashboard) -->
-  <main class="main-content" id="dashboardContent">
+  <main class="main-content grid-stack" id="dashboardContent">
       <!-- Timetable -->
-      <!-- Timetable (shrink to content) -->
-      <section class="panel timetable-panel">
-        <div class="panel__header">
-          <h2>시간표</h2>
-          <span class="panel__subtitle" id="timetableWeek"></span>
+      <div class="grid-stack-item" gs-id="timetable" gs-x="0" gs-y="0" gs-w="8" gs-h="6" gs-min-w="2" gs-min-h="3">
+        <div class="grid-stack-item-content">
+          <section class="panel timetable-panel">
+            <div class="panel__header">
+              <h2>시간표</h2>
+              <span class="panel__subtitle" id="timetableWeek"></span>
+            </div>
+            <div class="panel__body">
+              <table class="timetable" id="timetable">
+                <thead id="timetableHead">
+                </thead>
+                <tbody id="timetableBody">
+                </tbody>
+              </table>
+            </div>
+          </section>
         </div>
-        <div class="panel__body">
-          <table class="timetable" id="timetable">
-            <thead id="timetableHead">
-            </thead>
-            <tbody id="timetableBody">
-            </tbody>
-          </table>
-        </div>
-      </section>
+      </div>
 
-      <!-- Study Plan (separate card, hidden when empty) -->
-      <section class="panel study-plan-panel" id="studyPlanContainer">
-        <div class="panel__header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <div class="study-plan-nav">
-            <button class="study-plan-nav__btn" id="studyPlanPrev" title="이전 주">
-              <svg width="12" height="12" viewBox="0 0 12 12"><polyline points="8,1 3,6 8,11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-            <h2 id="studyPlanTitle">주학습계획안</h2>
-            <button class="study-plan-nav__btn" id="studyPlanNext" title="다음 주">
-              <svg width="12" height="12" viewBox="0 0 12 12"><polyline points="4,1 9,6 4,11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-          </div>
-          <button id="btnSetStudyPlanFolder" title="주학습계획안 HWP 폴더 선택" style="display:none;font-size:0.72rem;padding:3px 10px;white-space:nowrap;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm,4px);cursor:pointer;opacity:0.85;">폴더 설정</button>
+      <!-- Study Plan -->
+      <div class="grid-stack-item" gs-id="studyplan" gs-x="0" gs-y="6" gs-w="8" gs-h="5" gs-min-w="4" gs-min-h="3">
+        <div class="grid-stack-item-content">
+          <section class="panel study-plan-panel" id="studyPlanContainer">
+            <div class="panel__header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div class="study-plan-nav">
+                <button class="study-plan-nav__btn" id="studyPlanPrev" title="이전 주">
+                  <svg width="12" height="12" viewBox="0 0 12 12"><polyline points="8,1 3,6 8,11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <h2 id="studyPlanTitle">주학습계획안</h2>
+                <button class="study-plan-nav__btn" id="studyPlanNext" title="다음 주">
+                  <svg width="12" height="12" viewBox="0 0 12 12"><polyline points="4,1 9,6 4,11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+              <button id="btnSetStudyPlanFolder" title="주학습계획안 HWP 폴더 선택" style="display:none;font-size:0.72rem;padding:3px 10px;white-space:nowrap;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm,4px);cursor:pointer;opacity:0.85;">폴더 설정</button>
+            </div>
+            <div class="panel__body" id="studyPlanContent">
+            </div>
+          </section>
         </div>
-        <div class="panel__body" id="studyPlanContent">
-        </div>
-      </section>
+      </div>
 
     <!-- Meals Column -->
-    <div class="meals-wrapper">
-      <section class="panel meals-panel" style="position: absolute; top:0; left:0; right:0; bottom:0;">
-        <div class="panel__header">
-          <h2>급식</h2>
-        </div>
-        <div class="panel__body" id="mealsContainer">
-          <div class="loading-placeholder">급식 정보를 불러오는 중...</div>
-        </div>
-      </section>
+    <div class="grid-stack-item" gs-id="meals" gs-x="8" gs-y="0" gs-w="4" gs-h="5" gs-min-w="3" gs-min-h="3">
+      <div class="grid-stack-item-content">
+        <section class="panel meals-panel">
+          <div class="panel__header">
+            <h2>급식</h2>
+          </div>
+          <div class="panel__body" id="mealsContainer">
+            <div class="loading-placeholder">급식 정보를 불러오는 중...</div>
+          </div>
+        </section>
+      </div>
     </div>
 
-    <!-- Events Column (25%) -->
-    <div class="events-wrapper">
-      <section class="panel events-panel" style="position: absolute; top:0; left:0; right:0; bottom:0;">
-        <div class="panel__header">
-          <h2 style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-            학교 행사
-            <button id="btnAddEvent" title="행사 추가" style="background: none; border: none; color: var(--text); font-size: 1.2rem; font-weight: bold; cursor: pointer; padding: 0 5px;">+</button>
-          </h2>
-        </div>
-        <div class="panel__body" id="eventsContainer">
-          <div class="loading-placeholder">학사일정을 불러오는 중...</div>
-        </div>
-      </section>
+    <!-- Events Column -->
+    <div class="grid-stack-item" gs-id="events" gs-x="8" gs-y="5" gs-w="4" gs-h="6" gs-min-w="3" gs-min-h="3">
+      <div class="grid-stack-item-content">
+        <section class="panel events-panel">
+          <div class="panel__header">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <h2>학교 행사</h2>
+              <button id="btnAddEvent" class="btn btn-primary" title="행사 추가" style="padding: 2px 8px; font-size: 0.8rem; border-radius: 4px; border: none; cursor: pointer;">행사 추가+</button>
+            </div>
+          </div>
+          <div class="panel__body" id="eventsContainer">
+            <div class="loading-placeholder">학사일정을 불러오는 중...</div>
+          </div>
+        </section>
+      </div>
     </div>
+
   </main>
 
   <!-- ===== Settings Overlay ===== -->
@@ -553,6 +565,55 @@
   <div class="alarm-popup" id="alarmPopup">
     <div class="alarm-popup__icon" id="alarmPopupIcon"></div>
     <div class="alarm-popup__text" id="alarmPopupText"></div>
+  </div>
+
+  <!-- Timer Alarm Popup -->
+  <div class="settings-overlay timer-alarm-overlay" id="timerAlarmOverlay">
+    <div class="timer-alarm-modal">
+      <div class="timer-alarm-modal__content">
+        <div class="timer-alarm-modal__icon">⏰</div>
+        <div class="timer-alarm-modal__title">지정된 시간이 되었습니다!</div>
+      </div>
+      <button class="btn btn-primary timer-alarm-modal__btn" id="btnTimerAlarmClose" style="margin-top: 24px; width: 100px; font-size: 1.1rem; padding: 10px 0;">확인</button>
+    </div>
+  </div>
+
+  <!-- Floating Timer Button -->
+  <div id="timerFab" class="timer-fab" title="타이머 열기/드래그 이동">
+    <span class="timer-fab__icon"><svg id="fi_10473518" enable-background="new 0 0 512 512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><linearGradient id="lg1"><stop offset="0" stop-color="#ffa1ae"></stop><stop offset="1" stop-color="#ff4565"></stop></linearGradient><linearGradient id="SVGID_1_" gradientUnits="userSpaceOnUse" x1="229.912" x2="276.498" xlink:href="#lg1" y1="90.989" y2="90.989"></linearGradient><linearGradient id="lg2"><stop offset="0" stop-color="#fe0364" stop-opacity="0"></stop><stop offset=".2343" stop-color="#f90362" stop-opacity=".234"></stop><stop offset=".5173" stop-color="#ea035b" stop-opacity=".517"></stop><stop offset=".8243" stop-color="#d20250" stop-opacity=".824"></stop><stop offset="1" stop-color="#c00148"></stop></linearGradient><linearGradient id="SVGID_00000169550859226383789030000005546034187865242773_" gradientUnits="userSpaceOnUse" x1="254.436" x2="305.084" xlink:href="#lg2" y1="94.773" y2="88.984"></linearGradient><linearGradient id="SVGID_00000157308082443708995360000016168925266250083488_" gradientUnits="userSpaceOnUse" x1="256" x2="256" xlink:href="#lg2" y1="60.228" y2="29.319"></linearGradient><linearGradient id="SVGID_00000146459107496377587900000016098589383800944315_" gradientUnits="userSpaceOnUse" x1="251.03" x2="265.581" xlink:href="#lg2" y1="-2.492" y2="130.827"></linearGradient><linearGradient id="SVGID_00000069363330491900008960000012694016628966259866_" gradientUnits="userSpaceOnUse" x1="246.533" x2="270.13" xlink:href="#lg2" y1="47.12" y2="74.649"></linearGradient><linearGradient id="SVGID_00000083080514284732187660000010033068542410289296_" gradientUnits="userSpaceOnUse" x1="256" x2="256" xlink:href="#lg1" y1="5.598" y2="29.77"></linearGradient><linearGradient id="SVGID_00000154426573798227531600000001905531264346959023_" gradientUnits="userSpaceOnUse" x1="291.38" x2="313.156" xlink:href="#lg2" y1="24.088" y2="35.089"></linearGradient><linearGradient id="SVGID_00000151541909650852868480000003570262403450575788_" gradientUnits="userSpaceOnUse" x1="256" x2="256" xlink:href="#lg2" y1="19.293" y2="34.416"></linearGradient><linearGradient id="lg3"><stop offset="0" stop-color="#fef0ae"></stop><stop offset="1" stop-color="#fac600"></stop></linearGradient><linearGradient id="SVGID_00000036964238603888689240000003859472850487404947_" gradientTransform="matrix(.707 -.707 .707 .707 -4.569 356.911)" gradientUnits="userSpaceOnUse" x1="415.971" x2="469.778" xlink:href="#lg3" y1="128.406" y2="173.145"></linearGradient><linearGradient id="lg4"><stop offset="0" stop-color="#fe9738" stop-opacity="0"></stop><stop offset="1" stop-color="#fe9738"></stop></linearGradient><linearGradient id="SVGID_00000135652023718455740170000014184933110964608139_" gradientTransform="matrix(.707 -.707 .707 .707 -4.569 356.911)" gradientUnits="userSpaceOnUse" x1="443.899" x2="443.899" xlink:href="#lg4" y1="174.479" y2="193.835"></linearGradient><linearGradient id="SVGID_00000140000629808403472940000014038415470300752283_" gradientUnits="userSpaceOnUse" x1="69.288" x2="98.085" xlink:href="#lg3" y1="124.062" y2="152.859"></linearGradient><linearGradient id="SVGID_00000121261103668222090220000017984237140748711841_" gradientTransform="matrix(-.707 -.707 -.707 .707 861.658 356.911)" gradientUnits="userSpaceOnUse" x1="687.913" x2="687.913" xlink:href="#lg4" y1="418.494" y2="437.85"></linearGradient><linearGradient id="lg5"><stop offset="0" stop-color="#b3dafe"></stop><stop offset="1" stop-color="#0182fc"></stop></linearGradient><linearGradient id="SVGID_00000057867200845606662880000011492647792010079141_" gradientUnits="userSpaceOnUse" x1="124.402" x2="361.797" xlink:href="#lg5" y1="165.262" y2="402.658"></linearGradient><linearGradient id="SVGID_00000033340121657033467820000007682231006327483264_" gradientUnits="userSpaceOnUse" x1="377.388" x2="116.132" xlink:href="#lg5" y1="418.248" y2="156.993"></linearGradient><linearGradient id="lg6"><stop offset="0" stop-color="#314dc9" stop-opacity="0"></stop><stop offset=".2761" stop-color="#304bc4" stop-opacity=".276"></stop><stop offset=".5628" stop-color="#2b45b8" stop-opacity=".563"></stop><stop offset=".8535" stop-color="#243ba3" stop-opacity=".854"></stop><stop offset="1" stop-color="#1f3596"></stop></linearGradient><linearGradient id="SVGID_00000097472178278880023320000013725995227686548618_" gradientUnits="userSpaceOnUse" x1="256" x2="256" xlink:href="#lg6" y1="299.583" y2="552.666"></linearGradient><linearGradient id="SVGID_00000026849564408953728930000015716273954167572634_" gradientTransform="matrix(.707 -.707 .707 .707 1249.232 -1573.912)" gradientUnits="userSpaceOnUse" x1="-2025.157" x2="-2025.157" xlink:href="#lg6" y1="623.238" y2="889.636"></linearGradient><linearGradient id="SVGID_00000027591888729965317870000001826869583211937928_" gradientTransform="matrix(-1 0 0 -1 -1616 -1616)" gradientUnits="userSpaceOnUse" x1="-1961.684" x2="-1799.899" y1="-2002.544" y2="-1840.76"><stop offset="0" stop-color="#f5fbff"></stop><stop offset="1" stop-color="#dbd5ef"></stop></linearGradient><linearGradient id="lg7"><stop offset="0" stop-color="#dbd5ef" stop-opacity="0"></stop><stop offset=".2853" stop-color="#d9d2ee" stop-opacity=".285"></stop><stop offset=".4739" stop-color="#d4c9e9" stop-opacity=".474"></stop><stop offset=".6346" stop-color="#cbbae2" stop-opacity=".635"></stop><stop offset=".7795" stop-color="#bfa5d7" stop-opacity=".78"></stop><stop offset=".9126" stop-color="#af8aca" stop-opacity=".913"></stop><stop offset="1" stop-color="#a274bf"></stop></linearGradient><linearGradient id="SVGID_00000104663929610595199250000001350637794162658728_" gradientUnits="userSpaceOnUse" x1="239.226" x2="203.849" xlink:href="#lg7" y1="247.763" y2="144.252"></linearGradient><linearGradient id="SVGID_00000057109969067307116730000009340201006772280731_" gradientUnits="userSpaceOnUse" x1="183.996" x2="118.482" xlink:href="#lg7" y1="262.292" y2="230.845"></linearGradient><linearGradient id="SVGID_00000016074485865546972760000009872648807315494561_" gradientUnits="userSpaceOnUse" x1="306.966" x2="246.693" xlink:href="#lg7" y1="330.919" y2="307.334"></linearGradient><linearGradient id="SVGID_00000068637573598642981670000014671566124813945502_" gradientUnits="userSpaceOnUse" x1="341.044" x2="299.989" xlink:href="#lg7" y1="296.775" y2="261.398"></linearGradient><linearGradient id="SVGID_00000076572889187469184620000003379991733861516971_" gradientUnits="userSpaceOnUse" x1="297.859" x2="313.171" xlink:href="#lg1" y1="238.405" y2="253.716"></linearGradient><linearGradient id="SVGID_00000021104515320062750570000015082992311198241193_" gradientUnits="userSpaceOnUse" x1="283.711" x2="266.192" xlink:href="#lg2" y1="267.283" y2="284.803"></linearGradient><linearGradient id="SVGID_00000161600450830714795010000000200376433690732720_" gradientUnits="userSpaceOnUse" x1="818.474" x2="154.131" xlink:href="#lg7" y1="568.845" y2="113.342"></linearGradient><linearGradient id="SVGID_00000160152169775511262620000013369870273545442193_" gradientUnits="userSpaceOnUse" x1="712.443" x2="48.099" xlink:href="#lg7" y1="723.49" y2="267.987"></linearGradient><linearGradient id="SVGID_00000012440830335431177540000014450847850286807984_" gradientUnits="userSpaceOnUse" x1="801.809" x2="137.465" xlink:href="#lg7" y1="593.151" y2="137.649"></linearGradient><linearGradient id="SVGID_00000027566071524523665940000015366624645604666800_" gradientUnits="userSpaceOnUse" x1="729.109" x2="64.765" xlink:href="#lg7" y1="699.183" y2="243.68"></linearGradient><linearGradient id="SVGID_00000063634841998353436110000013646367172413518513_" gradientUnits="userSpaceOnUse" x1="793.197" x2="128.853" xlink:href="#lg7" y1="605.712" y2="150.209"></linearGradient><linearGradient id="SVGID_00000021104126794234049640000014293434289441882283_" gradientUnits="userSpaceOnUse" x1="737.72" x2="73.377" xlink:href="#lg7" y1="686.623" y2="231.12"></linearGradient><linearGradient id="SVGID_00000164471801439396452910000009276680203061241268_" gradientUnits="userSpaceOnUse" x1="823.447" x2="159.103" xlink:href="#lg7" y1="561.593" y2="106.09"></linearGradient><linearGradient id="SVGID_00000026873187308687405310000014266911828672062609_" gradientUnits="userSpaceOnUse" x1="707.471" x2="43.127" xlink:href="#lg7" y1="730.742" y2="275.239"></linearGradient><linearGradient id="SVGID_00000144295503859874104640000002079819202635478952_" gradientUnits="userSpaceOnUse" x1="829.547" x2="165.203" xlink:href="#lg7" y1="552.696" y2="97.193"></linearGradient><linearGradient id="SVGID_00000013887784015528418130000017616709430750863755_" gradientUnits="userSpaceOnUse" x1="701.37" x2="37.027" xlink:href="#lg7" y1="739.639" y2="284.136"></linearGradient><linearGradient id="SVGID_00000043447214039111288110000015252488524010403751_" gradientUnits="userSpaceOnUse" x1="760.487" x2="96.143" xlink:href="#lg7" y1="653.419" y2="197.916"></linearGradient><linearGradient id="SVGID_00000111177790090777013110000008097941844122452614_" gradientUnits="userSpaceOnUse" x1="770.431" x2="106.087" xlink:href="#lg7" y1="638.916" y2="183.413"></linearGradient><linearGradient id="SVGID_00000031167058067655232360000008060673000617848203_" gradientUnits="userSpaceOnUse" x1="244.776" x2="265.024" xlink:href="#lg3" y1="285.636" y2="305.884"></linearGradient><linearGradient id="SVGID_00000168118393098053997640000011813650331316736441_" gradientUnits="userSpaceOnUse" x1="256" x2="256" xlink:href="#lg4" y1="297.093" y2="318.679"></linearGradient><linearGradient id="SVGID_00000013899881177433853160000017399157814937849263_" gradientTransform="matrix(.707 -.707 .707 .707 1249.232 -1573.912)" gradientUnits="userSpaceOnUse" x1="-2025.157" x2="-2025.157" xlink:href="#lg4" y1="620.747" y2="643.469"></linearGradient><g><g><path d="m304.494 51.612 4.204-25.122h-105.396l4.204 25.122c5.802 34.674-1.441 65.999-18.864 89.384l-10.797 14.492h156.309l-10.797-14.492c-17.422-23.385-24.665-54.71-18.863-89.384z" fill="url(#SVGID_1_)"></path><path d="m323.358 140.996c-17.423-23.385-24.666-54.71-18.864-89.384l4.204-25.122h-67.76v128.999h93.217z" fill="url(#SVGID_00000169550859226383789030000005546034187865242773_)"></path><path d="m207.506 51.612c2.301 13.749 2.543 26.968.92 39.377h95.148c-1.623-12.409-1.381-25.628.92-39.377l4.204-25.122h-105.396z" fill="url(#SVGID_00000157308082443708995360000016168925266250083488_)"></path><path d="m223.58 51.612c1.538 13.749 1.7 26.968.615 39.377h63.61c-1.085-12.409-.923-25.628.615-39.377l2.811-25.122h-70.461z" fill="url(#SVGID_00000146459107496377587900000016098589383800944315_)"></path><path d="m246.677 51.612c.442 13.749.489 26.968.177 39.377h18.293c-.312-12.409-.265-25.628.177-39.377l.808-25.122h-20.263z" fill="url(#SVGID_00000069363330491900008960000012694016628966259866_)"></path><g><path d="m306.19 33.437h-100.381c-7.576 0-13.717-6.141-13.717-13.717 0-6.486 4.542-12.085 10.888-13.422l7.23-1.524c30.194-6.364 61.384-6.364 91.578 0l7.23 1.524c6.346 1.338 10.888 6.937 10.888 13.422.002 7.575-6.14 13.717-13.716 13.717z" fill="url(#SVGID_00000083080514284732187660000010033068542410289296_)"></path><path d="m306.19 33.437c7.576 0 13.717-6.141 13.717-13.717 0-6.486-4.542-12.085-10.888-13.422l-7.23-1.524c-15.097-3.183-30.443-4.774-45.789-4.774v33.437z" fill="url(#SVGID_00000154426573798227531600000001905531264346959023_)"></path><path d="m192.092 19.719c0 7.576 6.141 13.717 13.717 13.717h100.381c7.576 0 13.717-6.141 13.717-13.717 0-3.942-1.685-7.551-4.427-10.08h-118.962c-2.741 2.53-4.426 6.138-4.426 10.08z" fill="url(#SVGID_00000151541909650852868480000003570262403450575788_)"></path></g></g><g><g><g><path d="m467.256 159.541-41.426 41.426c-5.135 5.135-13.461 5.135-18.596 0l-41.426-41.426c-5.135-5.135-5.135-13.461 0-18.596l41.426-41.426c5.135-5.135 13.461-5.135 18.596 0l41.426 41.426c5.135 5.135 5.135 13.461 0 18.596z" fill="url(#SVGID_00000036964238603888689240000003859472850487404947_)"></path></g><path d="m467.256 159.541-41.426 41.426c-5.135 5.135-13.461 5.135-18.596 0l-41.426-41.426c-5.135-5.135-5.135-13.461 0-18.596l41.426-41.426c5.135-5.135 13.461-5.135 18.596 0l41.426 41.426c5.135 5.135 5.135 13.461 0 18.596z" fill="url(#SVGID_00000135652023718455740170000014184933110964608139_)"></path></g><g><g><path d="m44.744 159.541 41.426 41.426c5.135 5.135 13.461 5.135 18.596 0l41.426-41.426c5.135-5.135 5.135-13.461 0-18.596l-41.426-41.426c-5.135-5.135-13.461-5.135-18.596 0l-41.426 41.426c-5.135 5.135-5.135 13.461 0 18.596z" fill="url(#SVGID_00000140000629808403472940000014038415470300752283_)"></path></g></g><path d="m44.744 159.541 41.426 41.426c5.135 5.135 13.461 5.135 18.596 0l41.426-41.426c5.135-5.135 5.135-13.461 0-18.596l-41.426-41.426c-5.135-5.135-13.461-5.135-18.596 0l-41.426 41.426c-5.135 5.135-5.135 13.461 0 18.596z" fill="url(#SVGID_00000121261103668222090220000017984237140748711841_)"></path></g><g><g><g><circle cx="256" cy="296.86" fill="url(#SVGID_00000057867200845606662880000011492647792010079141_)" r="215.14"></circle><circle cx="256" cy="296.86" fill="url(#SVGID_00000033340121657033467820000007682231006327483264_)" r="173.436"></circle><path d="m40.86 296.86c0 118.818 96.321 215.14 215.14 215.14 118.818 0 215.14-96.322 215.14-215.14 0-25.733-4.533-50.403-12.819-73.276h-404.642c-8.285 22.873-12.819 47.543-12.819 73.276z" fill="url(#SVGID_00000097472178278880023320000013725995227686548618_)"></path><path d="m103.873 448.987c84.017 84.017 220.236 84.017 304.253 0s84.017-220.237 0-304.253c-18.196-18.196-38.846-32.435-60.878-42.749l-286.124 286.124c10.314 22.032 24.553 42.682 42.749 60.878z" fill="url(#SVGID_00000026849564408953728930000015716273954167572634_)"></path></g><g><circle cx="256" cy="296.86" fill="url(#SVGID_00000027591888729965317870000001826869583211937928_)" r="146.617"></circle><path d="m402.617 296.86c0-80.974-65.643-146.617-146.617-146.617s-146.617 65.643-146.617 146.617c0 17.537 3.089 34.35 8.736 49.937h275.762c5.647-15.587 8.736-32.399 8.736-49.937z" fill="url(#SVGID_00000104663929610595199250000001350637794162658728_)"></path><path d="m359.674 193.186c-57.257-57.257-150.09-57.258-207.348 0-57.257 57.257-57.257 150.091 0 207.348 12.401 12.401 26.473 22.104 41.488 29.134l194.993-194.993c-7.029-15.015-16.732-29.088-29.133-41.489z" fill="url(#SVGID_00000057109969067307116730000009340201006772280731_)"></path></g></g><path d="m243.025 309.836 43.591 43.591c7.146 7.146 18.822 7.444 26.021.352.094-.093.188-.187.281-.281 7.092-7.199 6.794-18.875-.352-26.021l-43.591-43.591z" fill="url(#SVGID_00000016074485865546972760000009872648807315494561_)"></path><path d="m243.025 309.836 102.867 102.867c4.782-3.72 9.388-7.774 13.782-12.168 46.968-46.968 55.398-117.87 25.311-173.441l-30.398-30.398z" fill="url(#SVGID_00000068637573598642981670000014671566124813945502_)"></path><path d="m256 294.994-6.41-6.41 30.717-40c10.523-13.703 27.525-28.929 54.23-46.02l11.033-7.061c6.37-4.077 13.996 3.549 9.919 9.919l-7.061 11.033c-17.091 26.706-32.317 43.707-46.02 54.23l-40 30.717z" fill="url(#SVGID_00000076572889187469184620000003379991733861516971_)"></path><path d="m311.503 262.914-23.423-23.423c-2.907 3.103-5.501 6.136-7.772 9.093l-30.717 40 6.41 6.41 6.41 6.41 40-30.717c2.956-2.272 5.989-4.866 9.092-7.773z" fill="url(#SVGID_00000021104515320062750570000015082992311198241193_)"></path><g><path d="m256 168.102c-2.846 0-5.153 2.307-5.153 5.153v19.866c0 2.846 2.307 5.153 5.153 5.153s5.153-2.307 5.153-5.153v-19.866c0-2.846-2.307-5.153-5.153-5.153z" fill="url(#SVGID_00000161600450830714795010000000200376433690732720_)"></path><path d="m256 395.447c-2.846 0-5.153 2.307-5.153 5.153v19.866c0 2.846 2.307 5.153 5.153 5.153s5.153-2.307 5.153-5.153v-19.866c0-2.846-2.307-5.153-5.153-5.153z" fill="url(#SVGID_00000160152169775511262620000013369870273545442193_)"></path><path d="m379.606 291.708h-19.866c-2.846 0-5.153 2.307-5.153 5.153s2.307 5.153 5.153 5.153h19.866c2.846 0 5.153-2.307 5.153-5.153s-2.307-5.153-5.153-5.153z" fill="url(#SVGID_00000012440830335431177540000014450847850286807984_)"></path><path d="m157.413 296.86c0-2.846-2.307-5.153-5.153-5.153h-19.866c-2.846 0-5.153 2.307-5.153 5.153s2.307 5.153 5.153 5.153h19.866c2.846 0 5.153-2.307 5.153-5.153z" fill="url(#SVGID_00000027566071524523665940000015366624645604666800_)"></path><path d="m198.659 187.238c-1.423-2.465-4.574-3.309-7.039-1.886s-3.309 4.574-1.886 7.039l9.933 17.205c1.423 2.465 4.574 3.309 7.039 1.886s3.309-4.574 1.886-7.039z" fill="url(#SVGID_00000063634841998353436110000013646367172413518513_)"></path><path d="m312.332 384.125c-1.423-2.465-4.574-3.309-7.039-1.886s-3.309 4.574-1.886 7.039l9.933 17.205c1.423 2.465 4.574 3.309 7.039 1.886s3.309-4.574 1.886-7.039z" fill="url(#SVGID_00000021104126794234049640000014293434289441882283_)"></path><path d="m348.418 249.453 17.205-9.933c2.465-1.423 3.309-4.574 1.886-7.039s-4.574-3.309-7.039-1.886l-17.205 9.933c-2.464 1.423-3.309 4.574-1.886 7.039 1.423 2.464 4.574 3.309 7.039 1.886z" fill="url(#SVGID_00000164471801439396452910000009276680203061241268_)"></path><path d="m163.582 344.268-17.205 9.933c-2.464 1.423-3.309 4.574-1.886 7.039s4.574 3.309 7.039 1.886l17.205-9.933c2.465-1.423 3.309-4.574 1.886-7.039s-4.574-3.309-7.039-1.886z" fill="url(#SVGID_00000026873187308687405310000014266911828672062609_)"></path><path d="m320.379 185.352c-2.465-1.423-5.616-.578-7.039 1.886l-9.933 17.205c-1.423 2.465-.578 5.616 1.886 7.039 2.465 1.423 5.616.579 7.039-1.886l9.933-17.205c1.423-2.465.579-5.616-1.886-7.039z" fill="url(#SVGID_00000144295503859874104640000002079819202635478952_)"></path><path d="m206.706 382.239c-2.465-1.423-5.616-.579-7.039 1.886l-9.933 17.205c-1.423 2.465-.578 5.616 1.886 7.039 2.465 1.423 5.616.578 7.039-1.886l9.933-17.205c1.423-2.465.579-5.616-1.886-7.039z" fill="url(#SVGID_00000013887784015528418130000017616709430750863755_)"></path><path d="m168.735 240.528-17.205-9.933c-2.465-1.423-5.616-.579-7.039 1.886s-.579 5.616 1.886 7.039l17.205 9.933c2.464 1.423 5.616.578 7.039-1.886 1.423-2.465.579-5.616-1.886-7.039z" fill="url(#SVGID_00000043447214039111288110000015252488524010403751_)"></path><path d="m365.622 354.201-17.205-9.933c-2.464-1.423-5.616-.578-7.039 1.886-1.423 2.465-.579 5.616 1.886 7.039l17.205 9.933c2.465 1.423 5.616.579 7.039-1.886s.579-5.616-1.886-7.039z" fill="url(#SVGID_00000111177790090777013110000008097941844122452614_)"></path></g><g><circle cx="256" cy="296.86" fill="url(#SVGID_00000031167058067655232360000008060673000617848203_)" r="18.35"></circle><path d="m237.65 296.86c0 10.134 8.215 18.35 18.35 18.35 10.134 0 18.35-8.215 18.35-18.35 0-2.195-.387-4.299-1.093-6.25h-34.513c-.707 1.951-1.094 4.056-1.094 6.25z" fill="url(#SVGID_00000168118393098053997640000011813650331316736441_)"></path><path d="m243.025 309.836c7.166 7.166 18.784 7.166 25.95 0s7.166-18.784 0-25.95c-1.552-1.552-3.313-2.766-5.192-3.646l-24.404 24.404c.879 1.878 2.094 3.64 3.646 5.192z" fill="url(#SVGID_00000013899881177433853160000017399157814937849263_)"></path></g></g></g></svg></span>
+    <span id="timerFabTime" class="timer-fab__time" style="display:none;"></span>
+  </div>
+
+  <!-- Timer Setup Modal Overlay -->
+  <div class="settings-overlay timer-interface-overlay" id="timerInterfaceOverlay">
+    <div class="timer-interface-modal">
+      <header class="settings-titlebar">
+        <span class="settings-titlebar__title">타이머 설정</span>
+        <button class="settings-titlebar__close" id="btnCloseTimerInterface" title="닫기">
+          <svg width="10" height="10" viewBox="0 0 10 10"><line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" stroke-width="1.2"/><line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" stroke-width="1.2"/></svg>
+        </button>
+      </header>
+      <div class="timer-modal-body" style="padding: 24px; display: flex; flex-direction: column; align-items: center;">
+        <div class="timer-display" id="timerDisplay">00:00</div>
+        <div class="timer-presets" style="margin-top: 20px; display: flex; gap: 12px;">
+          <button class="btn btn-secondary timer-preset-btn" data-min="1">1분</button>
+          <button class="btn btn-secondary timer-preset-btn" data-min="3">3분</button>
+          <button class="btn btn-secondary timer-preset-btn" data-min="5">5분</button>
+        </div>
+        <div class="timer-custom" style="margin-top: 16px; display: flex; gap: 8px; align-items: center;">
+          <input type="number" id="timerCustomInput" min="1" max="999" placeholder="분" style="width: 70px; text-align: right; border: 1px solid var(--border-color); border-radius: 4px; padding: 6px;">
+          <span style="font-size: 1rem; color: var(--text-primary);">분</span>
+          <button class="btn btn-primary" id="btnTimerSet" style="padding: 6px 14px; font-size: 0.9rem;">설정</button>
+        </div>
+        <div class="timer-actions" style="margin-top: 24px; display: flex; gap: 12px; width: 100%;">
+          <button class="btn btn-primary" id="btnTimerStart" style="flex: 2; font-size: 1.2rem; padding: 12px 0;">시작</button>
+          <button class="btn btn-secondary" id="btnTimerStop" style="flex: 1; font-size: 1.2rem; padding: 12px 0;">완전 정지</button>
+        </div>
+        <div style="margin-top: 16px; font-size: 0.8rem; color: var(--text-muted);">
+          ※ 시작 후 이 창을 닫아도 타이머는 계속 작동합니다.
+        </div>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="/src/main.ts"></script>

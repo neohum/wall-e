@@ -1,6 +1,8 @@
 // ===== Dashboard Logic =====
 // Uses Wails bindings instead of Electrobun RPC
 
+import 'gridstack/dist/gridstack.min.css';
+import { GridStack } from 'gridstack';
 import type { Settings, DashboardData, MealData, ScheduleEvent, CustomEvent as WallECustomEvent } from "../types";
 import {
   getPeriods,
@@ -26,6 +28,7 @@ import {
   getTodayStr,
   $,
 } from "./utils";
+import { initTimer } from "./timer";
 
 // Weather code to emoji map (moved from Go backend since it's display logic)
 const WEATHER_CODE_MAP: Record<number, string> = {
@@ -145,6 +148,98 @@ let editingEventId: string | null = null;
 
 // ===== Initialization =====
 
+let grid: GridStack | null = null;
+const LAYOUT_KEY = 'wall-e-dashboard-layout';
+
+function initGridLayout(): void {
+  grid = GridStack.init({
+    cellHeight: 80,
+    margin: 16,
+    animate: true,
+  }, '#dashboardContent');
+
+  const savedLayout = localStorage.getItem(LAYOUT_KEY);
+  if (savedLayout) {
+    try {
+      const layout = JSON.parse(savedLayout);
+      grid.load(layout, false); // false prevents removing new DOM elements not in saved layout
+    } catch (e) {
+      console.error('Failed to load layout from localStorage', e);
+    }
+  }
+
+  grid.on('change', () => {
+    if (!grid) return;
+    const layout = grid.save(false);
+    localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
+  });
+
+  setupPanelControls();
+}
+
+function setupPanelControls() {
+  if (!grid) return;
+  document.querySelectorAll('.panel').forEach(panel => {
+    const header = panel.querySelector('.panel__header');
+    if (!header) return;
+    
+    const minBtn = document.createElement('button');
+    minBtn.className = 'btn-minimize-panel';
+    minBtn.title = '최소화';
+    minBtn.innerHTML = '−'; // minus sign
+    
+    // Style the button
+    minBtn.style.background = 'none';
+    minBtn.style.border = 'none';
+    minBtn.style.color = 'var(--text-secondary)';
+    minBtn.style.fontSize = '1.2rem';
+    minBtn.style.fontWeight = 'bold';
+    minBtn.style.cursor = 'pointer';
+    minBtn.style.padding = '0 5px';
+    minBtn.style.marginLeft = 'auto'; // push to right
+
+    header.appendChild(minBtn);
+    minBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const gridItem = panel.closest('.grid-stack-item') as HTMLElement;
+      if (!gridItem) return;
+
+      const body = panel.querySelector('.panel__body') as HTMLElement;
+      if (!body) return;
+
+      if (panel.classList.contains('minimized')) {
+        // Restore
+        panel.classList.remove('minimized');
+        body.style.display = '';
+        const oldH = gridItem.dataset.prevH || gridItem.getAttribute('gs-min-h') || '3';
+        const oldMinH = gridItem.dataset.prevMinH || '3';
+        grid!.update(gridItem, { h: parseInt(oldH), minH: parseInt(oldMinH) });
+        minBtn.innerHTML = '−';
+        minBtn.title = '최소화';
+      } else {
+        // Minimize
+        panel.classList.add('minimized');
+        gridItem.dataset.prevH = gridItem.getAttribute('gs-h') || '3';
+        gridItem.dataset.prevMinH = gridItem.getAttribute('gs-min-h') || '3';
+        body.style.display = 'none';
+        grid!.update(gridItem, { h: 1, minH: 1 });
+        minBtn.innerHTML = '＋';
+        minBtn.title = '최대화';
+      }
+    });
+
+    // Check if it was loaded as minimized (h===1)
+    const gridItem = panel.closest('.grid-stack-item');
+    if (gridItem && gridItem.getAttribute('gs-h') === '1') {
+      panel.classList.add('minimized');
+      const body = panel.querySelector('.panel__body') as HTMLElement;
+      if (body) body.style.display = 'none';
+      minBtn.innerHTML = '＋';
+      minBtn.title = '최대화';
+    }
+  });
+}
+
 export async function initDashboard(): Promise<void> {
   cachedSettings = await window.go.main.App.GetSettings();
 
@@ -153,6 +248,7 @@ export async function initDashboard(): Promise<void> {
   updateAppVersion();
   applyBackground(cachedSettings);
   updateClock();
+  initGridLayout();
   await loadDashboardData();
   startUpdateLoop();
 
@@ -226,6 +322,9 @@ export async function initDashboard(): Promise<void> {
       }
     });
   }
+
+  // Initialize floating timer
+  initTimer();
 
   // Auto update check on startup
   checkForUpdateOnStartup();
@@ -774,7 +873,7 @@ function renderStudyPlanBlock(): void {
     if (titleEl) titleEl.innerHTML = titleHtml;
     
     const pdfBase64 = dashboardData.studyPlanSVGs[studyPlanIndex];
-    contentEl.innerHTML = `<iframe src="data:application/pdf;base64,${pdfBase64}#view=FitH" width="100%" height="800px" style="border: none; border-radius: var(--radius); background: white;"></iframe>`;
+    contentEl.innerHTML = `<iframe src="data:application/pdf;base64,${pdfBase64}#view=FitH" width="100%" height="100%" style="border: none; border-radius: var(--radius); background: white; display: block;"></iframe>`;
     updateStudyPlanNavButtons();
     return;
   }
@@ -890,8 +989,8 @@ function showAlarmPopup(event: AlarmEvent): void {
 
   popup.className = "alarm-popup";
 
-  let icon: string;
-  let text: string;
+  let icon: string = "";
+  let text: string = "";
 
   switch (event.type) {
     case "start":

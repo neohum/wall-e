@@ -283,49 +283,45 @@ body {
 
 /* ===== Main Content ===== */
 .main-content {
-  display: grid;
-  grid-template-columns: 8fr 4fr 3fr;
-  grid-template-rows: auto 1fr;
-  grid-template-areas:
-    "timetable meals events"
-    "studyplan studyplan events";
-  gap: 16px;
   padding: 16px 24px;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-.timetable-panel {
-  grid-area: timetable;
-  /* Allow height to be dictated by content but stretch to match row height */
-}
-
-.meals-panel {
-  grid-area: meals;
-}
-
-.events-panel {
-  grid-area: events;
-}
-
-.meals-wrapper {
-  grid-area: meals;
-  position: relative;
-  min-height: 0;
-}
-
-.events-wrapper {
-  grid-area: events;
-  position: relative;
-  min-height: 0;
-}
-
-.study-plan-panel {
-  grid-area: studyplan;
+/* GridStack Overrides */
+.grid-stack-item-content {
   display: flex;
   flex-direction: column;
-  min-height: 0;
+}
+
+/* Custom Resize Handle */
+.grid-stack-item .ui-resizable-se {
+  background-image: none !important;
+  right: 5px;
+  bottom: 5px;
+  width: 14px;
+  height: 14px;
+  opacity: 0; /* Hidden until hovered */
+  transition: opacity 0.2s;
+  cursor: se-resize;
+}
+
+.grid-stack-item .ui-resizable-se::before {
+  content: "";
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  border-radius: 2px;
+}
+
+.grid-stack-item:hover .ui-resizable-se {
+  opacity: 1;
 }
 
 .study-plan-panel .panel__body {
@@ -340,7 +336,8 @@ body {
   border-radius: 12px;
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  flex: 1;
+  height: 100%;
   overflow: hidden;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
@@ -945,3 +942,228 @@ body {
   text-align: center;
   margin-top: 6px;
 }
+
+/* ===== Timer Widget ===== */
+.timer-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.timer-display {
+  font-size: 3.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  line-height: 1;
+  letter-spacing: 2px;
+  background: rgba(255, 255, 255, 0.5);
+  padding: 10px 20px;
+  border-radius: 12px;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.timer-display.flash {
+  animation: timer-flash 1s infinite alternate;
+  color: var(--accent-red);
+}
+
+@keyframes timer-flash {
+  0% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+.timer-preset-btn {
+  font-size: 0.9rem;
+  padding: 6px 12px;
+  border-radius: 16px;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+.timer-preset-btn:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+/* ===== Timer FAB (Floating Action Button) ===== */
+.timer-fab {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
+  background: var(--bg-panel);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  cursor: grab;
+  z-index: 1000;
+  transition: background 0.2s, box-shadow 0.2s;
+  user-select: none;
+  touch-action: none;
+}
+
+.timer-fab:active {
+  cursor: grabbing;
+}
+
+.timer-fab:hover {
+  background: var(--bg-panel-hover);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+}
+
+.timer-fab__icon {
+  width: 36px;
+  height: 36px;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timer-fab__icon svg {
+  width: 36px;
+  height: 36px;
+}
+
+.timer-fab__time {
+  pointer-events: none;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--accent-cyan);
+}
+
+.timer-fab.running {
+  width: auto;
+  padding: 0 20px;
+}
+
+/* ===== Timer Alarm Popup ===== */
+.timer-alarm-overlay {
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  position: fixed;
+  inset: 0;
+  backdrop-filter: blur(4px);
+}
+
+.timer-alarm-overlay.open {
+  display: flex;
+}
+
+.timer-alarm-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(24px);
+  padding: 40px 60px;
+  border-radius: 16px;
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--glass-border);
+  transform: scale(0.9);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.timer-alarm-overlay.open .timer-alarm-modal {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.timer-alarm-modal__icon {
+  font-size: 5rem;
+  animation: shake 0.5s infinite;
+  text-align: center;
+}
+
+.timer-alarm-modal__title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-top: 16px;
+  text-align: center;
+}
+
+@keyframes shake {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(-10deg); }
+  50% { transform: rotate(0deg); }
+  75% { transform: rotate(10deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* ===== Timer Interface Modal ===== */
+.timer-interface-overlay {
+  z-index: 1050;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  position: fixed;
+  inset: 0;
+  backdrop-filter: blur(4px);
+}
+
+.timer-interface-overlay.open {
+  display: flex;
+}
+
+.timer-interface-modal {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  backdrop-filter: blur(24px);
+  border-radius: 16px;
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--glass-border);
+  width: 420px;
+  overflow: hidden;
+  transform: scale(0.9);
+  opacity: 0;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.timer-interface-overlay.open .timer-interface-modal {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.settings-titlebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.settings-titlebar__title {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.settings-titlebar__close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.settings-titlebar__close:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
