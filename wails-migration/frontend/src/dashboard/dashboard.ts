@@ -1,7 +1,7 @@
 // ===== Dashboard Logic =====
 // Uses Wails bindings instead of Electrobun RPC
 
-import type { Settings, DashboardData, MealData, ScheduleEvent } from "../types";
+import type { Settings, DashboardData, MealData, ScheduleEvent, CustomEvent as WallECustomEvent } from "../types";
 import {
   getPeriods,
   getSubjects,
@@ -12,8 +12,11 @@ import {
 } from "./schedule";
 import {
   checkAndPlayAlarms,
+  checkAndPlayHourlyChime,
+  checkAndPlayCustomEventAlarms,
   resetAlarmsIfNewDay,
   type AlarmEvent,
+  type CustomAlarmEvent
 } from "./audio";
 import {
   formatDate,
@@ -82,15 +85,19 @@ function getSettings(): Settings {
     classNum: 0,
     latitude: 0,
     longitude: 0,
-    spreadsheetUrl: "",
     useCustomApiKey: false,
     customApiKey: "",
     alarmEnabled: true,
     alarmSound: "classic",
     customAlarmData: "",
     customAlarmName: "",
+    timeAnnouncement: false,
+    panelOpacity: 0.5,
     backgroundId: "",
     customBackgrounds: [],
+    studyPlanFolder: "",
+    eventAlarmEnabled: true,
+    eventAlarmSound: "classic",
   };
 }
 
@@ -119,6 +126,11 @@ declare global {
           CheckForUpdate(): Promise<any>;
           DownloadAndRunUpdate(url: string): Promise<string>;
           OpenDownloadURL(url: string): Promise<void>;
+          GetCustomEvents(): Promise<WallECustomEvent[]>;
+          AddCustomEvent(e: WallECustomEvent): Promise<void>;
+          UpdateCustomEvent(e: WallECustomEvent): Promise<void>;
+          DeleteCustomEvent(id: string): Promise<void>;
+          PickStudyPlanFolder(): Promise<string>;
         };
       };
     };
@@ -128,6 +140,8 @@ declare global {
     };
   }
 }
+
+let editingEventId: string | null = null;
 
 // ===== Initialization =====
 
@@ -142,16 +156,105 @@ export async function initDashboard(): Promise<void> {
   await loadDashboardData();
   startUpdateLoop();
 
+  // Add Event Overlay handlers
+  const openEventBtn = document.getElementById("btnAddEvent");
+  const addEventOverlay = document.getElementById("addEventOverlay");
+  const closeEventBtn = document.getElementById("btnCloseAddEvent");
+  const saveEventBtn = document.getElementById("btnSaveEvent");
+
+  if (openEventBtn && addEventOverlay) {
+    openEventBtn.addEventListener("click", () => {
+      editingEventId = null;
+      addEventOverlay.classList.add("open");
+      (document.getElementById("eventNameInput") as HTMLInputElement).value = "";
+      (document.getElementById("eventDateInput") as HTMLInputElement).value = new Date().toISOString().split('T')[0];
+      (document.getElementById("eventTimeInput") as HTMLInputElement).value = "";
+      (document.getElementById("eventAlarmCheckbox") as HTMLInputElement).checked = true;
+    });
+  }
+
+  if (closeEventBtn && addEventOverlay) {
+    closeEventBtn.addEventListener("click", () => addEventOverlay.classList.remove("open"));
+  }
+  
+  if (addEventOverlay) {
+    addEventOverlay.addEventListener("click", (e) => {
+      if (e.target === addEventOverlay) addEventOverlay.classList.remove("open");
+    });
+  }
+
+  if (saveEventBtn) {
+    saveEventBtn.addEventListener("click", async () => {
+      const name = (document.getElementById("eventNameInput") as HTMLInputElement).value.trim();
+      const date = (document.getElementById("eventDateInput") as HTMLInputElement).value;
+      const time = (document.getElementById("eventTimeInput") as HTMLInputElement).value;
+      const alarmEnabled = (document.getElementById("eventAlarmCheckbox") as HTMLInputElement).checked;
+
+      if (!name) {
+        alert("행사 이름을 입력해주세요.");
+        return;
+      }
+      if (!date) {
+        alert("행사 날짜를 선택해주세요.");
+        return;
+      }
+
+      const isEdit = !!editingEventId;
+      const newId = isEdit ? editingEventId! : Date.now().toString(); // simple ID
+
+      const newEvent: WallECustomEvent = {
+        id: newId,
+        date,
+        time,
+        name,
+        alarmEnabled
+      };
+
+      try {
+        if (isEdit) {
+          await window.go.main.App.UpdateCustomEvent(newEvent);
+        } else {
+          await window.go.main.App.AddCustomEvent(newEvent);
+        }
+        
+        addEventOverlay?.classList.remove("open");
+        editingEventId = null;
+        updateEvents(); // Re-render
+      } catch (err) {
+        console.error("Failed to save custom event:", err);
+        alert("행사를 저장하는데 실패했습니다.");
+      }
+    });
+  }
+
   // Auto update check on startup
   checkForUpdateOnStartup();
+
+  // Study plan folder button
+  updateStudyPlanFolderBtn(cachedSettings.studyPlanFolder);
+  document.getElementById("btnSetStudyPlanFolder")?.addEventListener("click", async () => {
+    const path = await window.go.main.App.PickStudyPlanFolder();
+    if (!path) return;
+    const s = await window.go.main.App.GetSettings();
+    s.studyPlanFolder = path;
+    await window.go.main.App.SaveSettings(s);
+    // settingsChanged event will reload data and update button
+  });
 
   // Listen for settings changes from Go backend
   window.runtime.EventsOn("settingsChanged", async () => {
     cachedSettings = await window.go.main.App.GetSettings();
     updateHeader();
     applyBackground(cachedSettings);
+    updateStudyPlanFolderBtn(cachedSettings.studyPlanFolder);
     loadDashboardData();
   });
+}
+
+function updateStudyPlanFolderBtn(folder: string): void {
+  const btn = document.getElementById("btnSetStudyPlanFolder") as HTMLButtonElement | null;
+  if (!btn) return;
+  btn.style.display = folder ? "none" : "";
 }
 
 // ===== Auto Update Check =====
@@ -269,6 +372,12 @@ async function updateAppVersion(): Promise<void> {
 
 async function applyBackground(settings: Settings): Promise<void> {
   const frame = document.querySelector(".window-frame") as HTMLElement;
+  
+  if (settings.panelOpacity !== undefined) {
+    document.documentElement.style.setProperty("--bg-panel", `rgba(255, 255, 255, ${settings.panelOpacity})`);
+    document.documentElement.style.setProperty("--bg-panel-hover", `rgba(255, 255, 255, ${Math.min(1, settings.panelOpacity + 0.15)})`);
+  }
+
   if (!frame) return;
 
   if (!settings.backgroundId) {
@@ -335,16 +444,16 @@ function updateAirQuality(): void {
 
   if (pm10El) {
     const level = getPMLevel(aq.pm10, "pm10");
-    pm10El.textContent = `PM10 ${Math.round(aq.pm10)}`;
+    pm10El.textContent = `미세 ${getPMLevelLabel(level)}`;
     pm10El.className = `pm-badge ${level}`;
-    pm10El.title = `미세먼지: ${getPMLevelLabel(level)}`;
+    pm10El.title = `미세먼지: ${Math.round(aq.pm10)}μg/m³`;
   }
 
   if (pm25El) {
     const level = getPMLevel(aq.pm25, "pm25");
-    pm25El.textContent = `PM2.5 ${Math.round(aq.pm25)}`;
+    pm25El.textContent = `초미세 ${getPMLevelLabel(level)}`;
     pm25El.className = `pm-badge ${level}`;
-    pm25El.title = `초미세먼지: ${getPMLevelLabel(level)}`;
+    pm25El.title = `초미세먼지: ${Math.round(aq.pm25)}μg/m³`;
   }
 }
 
@@ -425,25 +534,62 @@ function formatMenuItem(item: string): string {
 
 // ===== Events =====
 
-function updateEvents(): void {
+// A unified event structure for sorting and rendering
+interface UnifiedEvent {
+  id?: string;
+  isCustom: boolean;
+  date: string;
+  name: string;
+  detail?: string;
+  time?: string;
+  alarmEnabled?: boolean;
+}
+
+async function updateEvents(): Promise<void> {
   const container = document.getElementById("eventsContainer");
   if (!container) return;
 
-  const events = dashboardData?.events ?? [];
+  const neisEvents = dashboardData?.events ?? [];
+  const customEvents = await window.go.main.App.GetCustomEvents() || [];
 
-  if (events.length === 0) {
+  // Filter custom events conceptually to either future/current month or just include all and sort
+  // For simplicity, include all since the user probably manages their own event list
+  
+  const unifiedEvents: UnifiedEvent[] = [
+    ...neisEvents.map(e => ({ isCustom: false, date: e.date, name: e.name, detail: e.detail })),
+    ...customEvents.map((e: WallECustomEvent) => ({ isCustom: true, id: e.id, date: e.date, name: e.name, time: e.time, alarmEnabled: e.alarmEnabled }))
+  ];
+
+  // Sort by date then time
+  unifiedEvents.sort((a, b) => {
+    const dA = a.date.replace(/-/g, "");
+    const dB = b.date.replace(/-/g, "");
+    const dCmp = dA.localeCompare(dB);
+    if (dCmp !== 0) return dCmp;
+    const tA = a.time || "";
+    const tB = b.time || "";
+    return tA.localeCompare(tB);
+  });
+
+  if (unifiedEvents.length === 0) {
     container.innerHTML = '<div class="loading-placeholder">예정된 행사가 없습니다</div>';
     return;
   }
 
   container.innerHTML = "";
 
-  for (const event of events) {
+  for (const event of unifiedEvents) {
     const item = document.createElement("div");
     const today = isToday(event.date);
     item.className = `event-item${today ? " today" : ""}`;
+    if (event.isCustom) item.style.borderLeftColor = "var(--primary)";
 
     const dateInfo = formatDateCompact(event.date);
+
+    let detailHtml = "";
+    if (event.detail) detailHtml += `<div class="event-item__detail">${event.detail}</div>`;
+    if (event.time) detailHtml += `<div class="event-item__detail" style="color:var(--primary);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>${event.time}${event.alarmEnabled ? ' 🔔' : ''}</div>`;
+    else if (event.isCustom && event.alarmEnabled) detailHtml += `<div class="event-item__detail" style="color:var(--primary);">🔔 (08:40 알림)</div>`;
 
     item.innerHTML = `
       <div class="event-item__date">
@@ -452,17 +598,58 @@ function updateEvents(): void {
       </div>
       <div class="event-item__info">
         <div class="event-item__name">${event.name}</div>
-        ${event.detail ? `<div class="event-item__detail">${event.detail}</div>` : ""}
+        ${detailHtml}
       </div>
+      ${event.isCustom ? `<button class="delete-btn" data-id="${event.id}" title="행사 삭제" style="background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;padding:0 8px;">&times;</button>` : ""}
     `;
+
+    if (event.isCustom) {
+      item.style.cursor = "pointer";
+      item.title = "클릭하여 수정";
+      item.addEventListener("click", (e) => {
+        // Prevent if clicking on the delete button
+        if ((e.target as HTMLElement).closest('.delete-btn')) return;
+
+        editingEventId = event.id!;
+        const addEventOverlay = document.getElementById("addEventOverlay");
+        if (addEventOverlay) addEventOverlay.classList.add("open");
+        const nameInput = document.getElementById("eventNameInput") as HTMLInputElement;
+        const dateInput = document.getElementById("eventDateInput") as HTMLInputElement;
+        const timeInput = document.getElementById("eventTimeInput") as HTMLInputElement;
+        const alarmCheckbox = document.getElementById("eventAlarmCheckbox") as HTMLInputElement;
+        
+        if (nameInput) nameInput.value = event.name;
+        if (dateInput) dateInput.value = event.date;
+        if (timeInput) timeInput.value = event.time || "";
+        if (alarmCheckbox) alarmCheckbox.checked = event.alarmEnabled || false;
+      });
+    }
 
     container.appendChild(item);
   }
+
+  // Bind delete handlers
+  container.querySelectorAll(".delete-btn").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation(); // Bubbling prevention
+      const id = (e.currentTarget as HTMLButtonElement).dataset.id;
+      if (id && confirm("이 맞춤형 행사를 삭제하시겠습니까?")) {
+        try {
+          await window.go.main.App.DeleteCustomEvent(id);
+          updateEvents(); // Re-render
+        } catch (err) {
+          console.error("Failed to delete custom event:", err);
+          alert("행사 삭제에 실패했습니다.");
+        }
+      }
+    });
+  });
 }
 
 // ===== Study Plan =====
 
 let studyPlanIndex = 0;
+let studyPlanInitialLoad = true;
 let studyPlanNavSetup = false;
 
 function setupStudyPlanNav(): void {
@@ -470,6 +657,14 @@ function setupStudyPlanNav(): void {
   studyPlanNavSetup = true;
 
   document.getElementById("studyPlanPrev")?.addEventListener("click", () => {
+    if (dashboardData?.studyPlanSVGs && dashboardData.studyPlanSVGs.length > 0) {
+      if (studyPlanIndex > 0) {
+        studyPlanIndex--;
+        renderStudyPlanBlock();
+      }
+      return;
+    }
+
     const result = dashboardData?.studyPlan;
     if (!result || result.blocks.length === 0) return;
     if (studyPlanIndex > 0) {
@@ -479,6 +674,14 @@ function setupStudyPlanNav(): void {
   });
 
   document.getElementById("studyPlanNext")?.addEventListener("click", () => {
+    if (dashboardData?.studyPlanSVGs && dashboardData.studyPlanSVGs.length > 0) {
+      if (studyPlanIndex < dashboardData.studyPlanSVGs.length - 1) {
+        studyPlanIndex++;
+        renderStudyPlanBlock();
+      }
+      return;
+    }
+
     const result = dashboardData?.studyPlan;
     if (!result || result.blocks.length === 0) return;
     if (studyPlanIndex < result.blocks.length - 1) {
@@ -495,19 +698,62 @@ function updateStudyPlan(): void {
   if (!container) return;
   container.style.display = "";
 
+  const contentEl = document.getElementById("studyPlanContent");
+  const titleEl = document.getElementById("studyPlanTitle");
+  const prevBtn = document.getElementById("studyPlanPrev") as HTMLButtonElement | null;
+  const nextBtn = document.getElementById("studyPlanNext") as HTMLButtonElement | null;
+
+  // Show conversion error if present
+  if (dashboardData?.studyPlanError) {
+    if (titleEl) titleEl.textContent = "주학습계획안";
+    if (contentEl) {
+      contentEl.innerHTML = `
+        <div class="study-plan-error">
+          <div class="study-plan-error__icon">⚠️</div>
+          <div class="study-plan-error__msg">${escapeHtml(dashboardData.studyPlanError)}</div>
+        </div>`;
+    }
+    if (prevBtn) prevBtn.style.visibility = "hidden";
+    if (nextBtn) nextBtn.style.visibility = "hidden";
+    return;
+  }
+
+  // Always make buttons visible if we have data
+  if (prevBtn) prevBtn.style.visibility = "visible";
+  if (nextBtn) nextBtn.style.visibility = "visible";
+
+  // Handle local PDF rendering
+  if (dashboardData?.studyPlanSVGs && dashboardData.studyPlanSVGs.length > 0) {
+    if (studyPlanInitialLoad || studyPlanIndex < 0 || studyPlanIndex >= dashboardData.studyPlanSVGs.length) {
+      if (dashboardData.studyPlanCurrentIndex !== undefined && dashboardData.studyPlanCurrentIndex >= 0) {
+        studyPlanIndex = dashboardData.studyPlanCurrentIndex;
+      } else {
+        studyPlanIndex = dashboardData.studyPlanSVGs.length - 1;
+      }
+      studyPlanInitialLoad = false;
+    }
+    renderStudyPlanBlock();
+    return;
+  }
+
   const result = dashboardData?.studyPlan ?? null;
   if (!result || result.blocks.length === 0) {
-    const contentEl = document.getElementById("studyPlanContent");
-    const titleEl = document.getElementById("studyPlanTitle");
     if (contentEl) contentEl.innerHTML = '<div class="loading-placeholder">주학습계획안이 없습니다</div>';
     if (titleEl) titleEl.textContent = "주학습계획안";
     updateStudyPlanNavButtons();
     return;
   }
 
-  // Set to current week index
-  studyPlanIndex = result.currentIndex >= 0 ? result.currentIndex : 0;
+  // Set to current week index for spreadsheet
+  if (studyPlanInitialLoad || studyPlanIndex < 0 || studyPlanIndex >= result.blocks.length) {
+      studyPlanIndex = result.currentIndex >= 0 ? result.currentIndex : 0;
+      studyPlanInitialLoad = false;
+  }
   renderStudyPlanBlock();
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function renderStudyPlanBlock(): void {
@@ -515,6 +761,25 @@ function renderStudyPlanBlock(): void {
   const titleEl = document.getElementById("studyPlanTitle");
   if (!contentEl) return;
 
+  // Render SVG PDF
+  if (dashboardData?.studyPlanSVGs && dashboardData.studyPlanSVGs.length > 0) {
+    if (studyPlanIndex < 0) studyPlanIndex = 0;
+    if (studyPlanIndex >= dashboardData.studyPlanSVGs.length) studyPlanIndex = dashboardData.studyPlanSVGs.length - 1;
+
+    const total = dashboardData.studyPlanSVGs.length;
+    let titleHtml = `주학습계획안 (${studyPlanIndex + 1}/${total})`;
+    if (dashboardData.studyPlanIsConverting) {
+      titleHtml += ` <span style="font-size:0.8em; color:var(--text-muted);"><span class="study-plan-loading__spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:4px;"></span>변환 중</span>`;
+    }
+    if (titleEl) titleEl.innerHTML = titleHtml;
+    
+    const pdfBase64 = dashboardData.studyPlanSVGs[studyPlanIndex];
+    contentEl.innerHTML = `<iframe src="data:application/pdf;base64,${pdfBase64}#view=FitH" width="100%" height="800px" style="border: none; border-radius: var(--radius); background: white;"></iframe>`;
+    updateStudyPlanNavButtons();
+    return;
+  }
+
+  // Render Spreadsheet
   const result = dashboardData?.studyPlan;
   if (!result || studyPlanIndex < 0 || studyPlanIndex >= result.blocks.length) return;
 
@@ -560,16 +825,36 @@ function renderStudyPlanBlock(): void {
 function updateStudyPlanNavButtons(): void {
   const prevBtn = document.getElementById("studyPlanPrev") as HTMLButtonElement | null;
   const nextBtn = document.getElementById("studyPlanNext") as HTMLButtonElement | null;
-  const result = dashboardData?.studyPlan;
-  const total = result?.blocks.length ?? 0;
+  
+  let total = 0;
+  if (dashboardData?.studyPlanSVGs && dashboardData.studyPlanSVGs.length > 0) {
+      total = dashboardData.studyPlanSVGs.length;
+  } else if (dashboardData?.studyPlan) {
+      total = dashboardData.studyPlan.blocks.length;
+  }
 
   if (prevBtn) prevBtn.disabled = studyPlanIndex <= 0;
-  if (nextBtn) nextBtn.disabled = studyPlanIndex >= total - 1;
+  if (nextBtn) nextBtn.disabled = studyPlanIndex >= total - 1 || total === 0;
 }
 
 // ===== Data Loading =====
 
 async function loadDashboardData(): Promise<void> {
+  // Show spinner while fetching (especially important for slow HWP→PDF conversion)
+  const settings = getSettings();
+  if (settings.studyPlanFolder) {
+    const contentEl = document.getElementById("studyPlanContent");
+    if (contentEl) {
+      contentEl.innerHTML = `
+        <div class="study-plan-loading">
+          <div class="study-plan-loading__spinner"></div>
+          <span>파일 변환 중...</span>
+        </div>`;
+    }
+    // Yield to the browser so the spinner actually paints before the blocking fetch
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  }
+
   try {
     dashboardData = await window.go.main.App.FetchDashboardData();
     lastFetchTime = Date.now();
@@ -581,6 +866,10 @@ async function loadDashboardData(): Promise<void> {
     updateStudyPlan();
   } catch (err) {
     console.error("Failed to load dashboard data:", err);
+    const contentEl = document.getElementById("studyPlanContent");
+    if (contentEl && settings.studyPlanFolder) {
+      contentEl.innerHTML = '<div class="loading-placeholder">데이터를 불러오지 못했습니다</div>';
+    }
   }
 }
 
@@ -636,6 +925,33 @@ function showAlarmPopup(event: AlarmEvent): void {
   }, 5000);
 }
 
+function showCustomEventAlarmPopup(event: CustomAlarmEvent): void {
+  const popup = document.getElementById("alarmPopup");
+  const iconEl = document.getElementById("alarmPopupIcon");
+  const textEl = document.getElementById("alarmPopupText");
+  if (!popup || !iconEl || !textEl) return;
+
+  if (alarmPopupTimeout) {
+    clearTimeout(alarmPopupTimeout);
+    alarmPopupTimeout = null;
+  }
+
+  popup.className = "alarm-popup alarm-warning";
+
+  iconEl.textContent = "\uD83D\uDD14";
+  textEl.innerHTML = `<strong>${event.name}</strong><br><span style="font-size:0.9em">${event.time}</span>`;
+
+  popup.classList.add("visible");
+
+  alarmPopupTimeout = setTimeout(() => {
+    popup.classList.add("fade-out");
+    popup.classList.remove("visible");
+    setTimeout(() => {
+      popup.className = "alarm-popup";
+    }, 400);
+  }, 10000); // 10 seconds for custom events
+}
+
 // ===== Update Loop =====
 
 function startUpdateLoop(): void {
@@ -649,6 +965,17 @@ function startUpdateLoop(): void {
     if (alarmEvent) {
       showAlarmPopup(alarmEvent);
     }
+    
+    // Add custom event alarm checking
+    window.go.main.App.GetCustomEvents().then((customEvents: any) => {
+      if (!customEvents) return;
+      const ceAlarm = checkAndPlayCustomEventAlarms(customEvents, settings.eventAlarmEnabled, settings.eventAlarmSound);
+      if (ceAlarm) {
+        showCustomEventAlarmPopup(ceAlarm);
+      }
+    });
+
+    checkAndPlayHourlyChime(settings.timeAnnouncement);
     resetAlarmsIfNewDay();
   }, 1000);
 

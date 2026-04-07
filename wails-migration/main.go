@@ -40,7 +40,7 @@ func resolveNeisAPIKey() string {
 	if key := readEnvKey(".env", "NEIS_API_KEY"); key != "" {
 		return key
 	}
-	return ""
+	return "e6f150bd4fe14dde85c323a3ee241260"
 }
 
 func readEnvKey(path, key string) string {

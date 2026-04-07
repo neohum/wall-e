@@ -313,9 +313,89 @@ export function checkAndPlayAlarms(
   return null;
 }
 
+export interface CustomAlarmEvent {
+  name: string;
+  time: string;
+}
+
+export function checkAndPlayCustomEventAlarms(
+  customEvents: any[],
+  eventAlarmEnabled: boolean,
+  eventAlarmSound: string
+): CustomAlarmEvent | null {
+  if (!eventAlarmEnabled || customEvents.length === 0) return null;
+
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  for (const event of customEvents) {
+    if (event.date !== todayStr || !event.alarmEnabled) continue;
+
+    let targetMinutes = 8 * 60 + 40; // 08:40 default
+    if (event.time) {
+      const parts = event.time.split(":");
+      if (parts.length === 2) {
+        targetMinutes = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10) - 10;
+      }
+    }
+
+    if (currentMinutes === targetMinutes) {
+      const key = `custom_event_${event.id}_${todayStr}`;
+      if (shouldPlayAlarm(key)) {
+        playPresetAlarm(eventAlarmSound, "start");
+        return { name: event.name, time: event.time || "08:40 (기본)" };
+      }
+    }
+  }
+  return null;
+}
+
 export function resetAlarmsIfNewDay(): void {
   const now = new Date();
   if (now.getHours() === 0 && now.getMinutes() === 0) {
     playedAlarms.clear();
+    lastHourlyChimeHour = -1;
   }
 }
+
+let lastHourlyChimeHour = -1;
+
+export function checkAndPlayHourlyChime(enabled: boolean): void {
+  if (!enabled) return;
+
+  const now = new Date();
+  const h = now.getHours();
+  const m = now.getMinutes();
+
+  if (m === 0 && h !== lastHourlyChimeHour) {
+    lastHourlyChimeHour = h;
+    
+    // Play an announcement using Web Speech API
+    if ('speechSynthesis' in window) {
+      const displayHour = h % 12 === 0 ? 12 : h % 12;
+      const ampm = h >= 12 ? "오후" : "오전";
+      const text = `${ampm} ${displayHour}시 입니다.`;
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "ko-KR";
+      utterance.rate = 1.0;
+      utterance.volume = 0.8;
+      
+      // Attempt to find a Korean voice
+      const voices = window.speechSynthesis.getVoices();
+      const koVoice = voices.find(v => v.lang.includes('ko'));
+      if (koVoice) {
+        utterance.voice = koVoice;
+      }
+      
+      window.speechSynthesis.speak(utterance);
+    } else {
+      // Fallback simple chime if TTS is not supported
+      const ctx = getAudioContext();
+      const t = ctx.currentTime;
+      playBellTone(NOTE.C6, t, 1.2, 0.4);
+    }
+  }
+}
+

@@ -26,9 +26,14 @@ func NewApp(neisAPIKey string) *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.setupTray()
+	if err := initDB(); err != nil {
+		runtime.LogError(ctx, "Failed to initialize database: "+err.Error())
+	}
 }
 
-func (a *App) shutdown(ctx context.Context) {}
+func (a *App) shutdown(ctx context.Context) {
+	closeDB()
+}
 
 // getEffectiveAPIKey returns the user's custom key if enabled, otherwise the built-in key.
 func (a *App) getEffectiveAPIKey() string {
@@ -52,15 +57,57 @@ func (a *App) SaveSettings(s Settings) {
 	runtime.EventsEmit(a.ctx, "settingsChanged")
 }
 
+// ===== Custom Events bindings =====
+
+func (a *App) GetCustomEvents() []CustomEvent {
+	events, err := GetCustomEventsFromDB()
+	if err != nil {
+		runtime.LogError(a.ctx, "Failed to get custom events: "+err.Error())
+		return []CustomEvent{}
+	}
+	return events
+}
+
+func (a *App) AddCustomEvent(e CustomEvent) error {
+	err := AddCustomEventToDB(e)
+	if err != nil {
+		runtime.LogError(a.ctx, "Failed to add custom event: "+err.Error())
+		return err
+	}
+	return nil
+}
+
+func (a *App) DeleteCustomEvent(id string) error {
+	err := DeleteCustomEventFromDB(id)
+	if err != nil {
+		runtime.LogError(a.ctx, "Failed to delete custom event: "+err.Error())
+		return err
+	}
+	return nil
+}
+
+func (a *App) UpdateCustomEvent(e CustomEvent) error {
+	err := UpdateCustomEventInDB(e)
+	if err != nil {
+		runtime.LogError(a.ctx, "Failed to update custom event: "+err.Error())
+		return err
+	}
+	return nil
+}
+
 // ===== Dashboard data =====
 
 type DashboardData struct {
-	Weather    *WeatherData     `json:"weather"`
-	AirQuality *AirQualityData  `json:"airQuality"`
-	Meals      []MealData       `json:"meals"`
-	Events     []ScheduleEvent  `json:"events"`
-	Timetable  *TimetableData   `json:"timetable"`
-	StudyPlan  *StudyPlanResult `json:"studyPlan"`
+	Weather       *WeatherData     `json:"weather"`
+	AirQuality    *AirQualityData  `json:"airQuality"`
+	Meals         []MealData       `json:"meals"`
+	Events        []ScheduleEvent  `json:"events"`
+	Timetable     *TimetableData   `json:"timetable"`
+	StudyPlan     *StudyPlanResult `json:"studyPlan"`
+	StudyPlanSVGs []string         `json:"studyPlanSVGs"`
+	StudyPlanError string          `json:"studyPlanError"`
+	StudyPlanIsConverting bool     `json:"studyPlanIsConverting"`
+	StudyPlanCurrentIndex int      `json:"studyPlanCurrentIndex"`
 }
 
 func (a *App) FetchDashboardData() DashboardData {
@@ -134,40 +181,52 @@ func (a *App) FetchDashboardData() DashboardData {
 		}
 	}()
 
-	// Timetable from spreadsheet
+	// Timetable from spreadsheet or NEIS
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if s.SpreadsheetURL != "" {
-			tt, _ := fetchTimetableFromSheet(s.SpreadsheetURL)
+		if apiKey != "" && s.SchoolCode != "" && s.OfficeCode != "" {
+			tt, err := fetchNEISTimetable(apiKey, s.OfficeCode, s.SchoolCode, s.SchoolName, s.Grade, s.ClassNum)
+			if err != nil {
+				runtime.LogError(a.ctx, "NEIS Timetable fetch error: "+err.Error())
+			}
 			mu.Lock()
-			result.Timetable = tt
+			if tt != nil {
+				result.Timetable = tt
+			}
 			mu.Unlock()
 		}
 	}()
 
-	// Sheet events
+	// Sheet events removed
 	var sheetEvents []ScheduleEvent
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if s.SpreadsheetURL != "" {
-			evts, _ := fetchEventsFromSheet(s.SpreadsheetURL)
-			mu.Lock()
-			sheetEvents = evts
-			mu.Unlock()
-		}
-	}()
 
-	// Study plan from spreadsheet
+// Study plan from local HWP or spreadsheet
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if s.SpreadsheetURL != "" {
-			sp, _ := fetchStudyPlanFromSheet(s.SpreadsheetURL)
-			mu.Lock()
-			result.StudyPlan = sp
-			mu.Unlock()
+		if s.StudyPlanFolder != "" {
+			pdfBase64s, currentIndex, isConverting, err := GetStudyPlanPDFs(a.ctx, s.StudyPlanFolder)
+			if err != nil {
+				errMsg := err.Error()
+				runtime.LogError(a.ctx, "HWP PDF Conversion state: "+errMsg)
+				mu.Lock()
+				result.StudyPlanError = errMsg
+				result.StudyPlanIsConverting = isConverting
+				// If there are existing SVGs, we should still return them
+				if len(pdfBase64s) > 0 {
+					result.StudyPlanSVGs = pdfBase64s
+					result.StudyPlanCurrentIndex = currentIndex
+				}
+				mu.Unlock()
+			} else if len(pdfBase64s) > 0 {
+				mu.Lock()
+				result.StudyPlanSVGs = pdfBase64s
+				result.StudyPlanCurrentIndex = currentIndex
+				result.StudyPlanIsConverting = isConverting
+				result.StudyPlanError = "" // clear error
+				mu.Unlock()
+			}
 		}
 	}()
 
@@ -225,6 +284,18 @@ func (a *App) GeocodeAddress(addr string) *Coords {
 		return nil
 	}
 	return c
+}
+
+// ===== Study Plan Folder Picker =====
+
+func (a *App) PickStudyPlanFolder() string {
+	path, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "주간학습계획안 폴더 선택",
+	})
+	if err != nil {
+		return ""
+	}
+	return path
 }
 
 // ===== Alarm File Picker =====

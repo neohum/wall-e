@@ -9,5 +9,9 @@
   "frontend:dir": "frontend",
   "author": {
     "name": "Wall-E"
+  },
+  "info": {
+    "productName": "Wall-E",
+    "productVersion": "1.0.15"
   }
 }

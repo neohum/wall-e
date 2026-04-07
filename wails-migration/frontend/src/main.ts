@@ -20,6 +20,19 @@ async function main(): Promise<void> {
   window.runtime.EventsOn("openSettings", () => {
     openSettings();
   });
+
+  // Manual button opens the manual overlay
+  document.getElementById("btnManual")?.addEventListener("click", () => {
+    document.getElementById("helpOverlay")?.classList.add("open");
+  });
+
+  const helpOverlay = document.getElementById("helpOverlay");
+  document.getElementById("btnCloseHelp")?.addEventListener("click", () => {
+    helpOverlay?.classList.remove("open");
+  });
+  helpOverlay?.addEventListener("click", (e) => {
+    if (e.target === helpOverlay) helpOverlay.classList.remove("open");
+  });
 }
 
 document.addEventListener("DOMContentLoaded", main);

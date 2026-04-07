@@ -74,6 +74,26 @@ export namespace main {
 	        this.fileName = source["fileName"];
 	    }
 	}
+	export class CustomEvent {
+	    id: string;
+	    date: string;
+	    time: string;
+	    name: string;
+	    alarmEnabled: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new CustomEvent(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.date = source["date"];
+	        this.time = source["time"];
+	        this.name = source["name"];
+	        this.alarmEnabled = source["alarmEnabled"];
+	    }
+	}
 	export class StudyPlanBlock {
 	    title: string;
 	    headers: string[];
@@ -231,6 +251,10 @@ export namespace main {
 	    events: ScheduleEvent[];
 	    timetable?: TimetableData;
 	    studyPlan?: StudyPlanResult;
+	    studyPlanSVGs: string[];
+	    studyPlanError: string;
+	    studyPlanIsConverting: boolean;
+	    studyPlanCurrentIndex: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new DashboardData(source);
@@ -244,6 +268,10 @@ export namespace main {
 	        this.events = this.convertValues(source["events"], ScheduleEvent);
 	        this.timetable = this.convertValues(source["timetable"], TimetableData);
 	        this.studyPlan = this.convertValues(source["studyPlan"], StudyPlanResult);
+	        this.studyPlanSVGs = source["studyPlanSVGs"];
+	        this.studyPlanError = source["studyPlanError"];
+	        this.studyPlanIsConverting = source["studyPlanIsConverting"];
+	        this.studyPlanCurrentIndex = source["studyPlanCurrentIndex"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -288,17 +316,17 @@ export namespace main {
 	export class SchoolSearchResult {
 	    schools: SchoolInfo[];
 	    error: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new SchoolSearchResult(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.schools = this.convertValues(source["schools"], SchoolInfo);
 	        this.error = source["error"];
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -325,20 +353,24 @@ export namespace main {
 	    classNum: number;
 	    latitude: number;
 	    longitude: number;
-	    spreadsheetUrl: string;
 	    useCustomApiKey: boolean;
 	    customApiKey: string;
 	    alarmEnabled: boolean;
 	    alarmSound: string;
 	    customAlarmData: string;
 	    customAlarmName: string;
+	    timeAnnouncement: boolean;
+	    panelOpacity: number;
 	    backgroundId: string;
 	    customBackgrounds: CustomBackground[];
-
+	    studyPlanFolder: string;
+	    eventAlarmEnabled: boolean;
+	    eventAlarmSound: string;
+	
 	    static createFrom(source: any = {}) {
 	        return new Settings(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.schoolName = source["schoolName"];
@@ -348,15 +380,19 @@ export namespace main {
 	        this.classNum = source["classNum"];
 	        this.latitude = source["latitude"];
 	        this.longitude = source["longitude"];
-	        this.spreadsheetUrl = source["spreadsheetUrl"];
 	        this.useCustomApiKey = source["useCustomApiKey"];
 	        this.customApiKey = source["customApiKey"];
 	        this.alarmEnabled = source["alarmEnabled"];
 	        this.alarmSound = source["alarmSound"];
 	        this.customAlarmData = source["customAlarmData"];
 	        this.customAlarmName = source["customAlarmName"];
+	        this.timeAnnouncement = source["timeAnnouncement"];
+	        this.panelOpacity = source["panelOpacity"];
 	        this.backgroundId = source["backgroundId"];
 	        this.customBackgrounds = this.convertValues(source["customBackgrounds"], CustomBackground);
+	        this.studyPlanFolder = source["studyPlanFolder"];
+	        this.eventAlarmEnabled = source["eventAlarmEnabled"];
+	        this.eventAlarmSound = source["eventAlarmSound"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

@@ -1,7 +1,7 @@
 // ===== Settings Overlay Logic =====
 // Uses Wails bindings instead of Electrobun RPC
 
-import type { Settings, CustomBackground } from "../types";
+import type { Settings, CustomBackground, CustomEvent } from "../types";
 
 // ===== Background Presets =====
 
@@ -88,11 +88,33 @@ let selectedBackgroundId = "";
 let pendingCustomAlarmData = "";
 let pendingCustomAlarmName = "";
 let customBackgrounds: CustomBackground[] = [];
+let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 // ===== DOM Helpers =====
 
 function $(id: string): HTMLInputElement | HTMLSelectElement {
   return document.getElementById(id) as HTMLInputElement | HTMLSelectElement;
+}
+
+// ===== Auto Save Logic =====
+async function triggerAutoSave(immediate = false): Promise<void> {
+  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+
+  const saveAction = async () => {
+    const values = collectFormValues();
+    await window.go.main.App.SaveSettings(values);
+    const indicator = document.getElementById("autoSaveIndicator");
+    if (indicator) {
+      indicator.style.opacity = "1";
+      setTimeout(() => { indicator.style.opacity = "0"; }, 2500);
+    }
+  };
+
+  if (immediate) {
+    await saveAction();
+  } else {
+    autoSaveTimer = setTimeout(saveAction, 500);
+  }
 }
 
 // ===== Background =====
@@ -145,6 +167,7 @@ function renderColorGrid(container: HTMLElement, colors: ColorPreset[], wrapper:
       deselectAll(wrapper);
       thumb.classList.add("selected");
       applyWindowBackground(c.id);
+      triggerAutoSave(true);
     });
     container.appendChild(thumb);
   }
@@ -189,6 +212,7 @@ function renderBackgroundPicker(): void {
       deselectAll(wrapper);
       thumb.classList.add("selected");
       applyWindowBackground(bg.id);
+      triggerAutoSave(true);
     });
 
     imageGrid.appendChild(thumb);
@@ -223,6 +247,7 @@ function renderBackgroundPicker(): void {
       if (selectedBackgroundId === customBgId) {
         selectedBackgroundId = "";
         applyWindowBackground("");
+        triggerAutoSave(true);
       }
       renderBackgroundPicker();
     });
@@ -233,6 +258,7 @@ function renderBackgroundPicker(): void {
       deselectAll(wrapper);
       thumb.classList.add("selected");
       applyWindowBackground(customBgId);
+      triggerAutoSave(true);
     });
 
     imageGrid.appendChild(thumb);
@@ -295,7 +321,9 @@ function loadFormValues(s: Settings): void {
   $("classNum").value = String(s.classNum);
   ($("latitude") as HTMLInputElement).value = String(s.latitude);
   ($("longitude") as HTMLInputElement).value = String(s.longitude);
-  $("spreadsheetUrl").value = s.spreadsheetUrl;
+
+  const studyPlanFolderEl = $("studyPlanFolder") as HTMLInputElement | null;
+  if (studyPlanFolderEl) studyPlanFolderEl.value = s.studyPlanFolder || "";
 
   // API key toggle
   const useCustomKey = s.useCustomApiKey || false;
@@ -305,9 +333,27 @@ function loadFormValues(s: Settings): void {
   if (apiKeyGroup) apiKeyGroup.style.display = useCustomKey ? "" : "none";
 
   ($("alarmEnabled") as HTMLInputElement).checked = s.alarmEnabled;
+  const timeAnnounceEl = $("timeAnnouncement") as HTMLInputElement | null;
+  if (timeAnnounceEl) timeAnnounceEl.checked = s.timeAnnouncement;
+
+  const panelOpacityInput = $("panelOpacity") as HTMLInputElement | null;
+  if (panelOpacityInput) {
+    const val = s.panelOpacity ?? 0.5;
+    panelOpacityInput.value = String(val);
+    const panelOpacityValue = document.getElementById("panelOpacityValue");
+    if (panelOpacityValue) {
+      panelOpacityValue.textContent = `${Math.round(val * 100)}%`;
+    }
+  }
 
   const radio = document.querySelector(`input[name="alarmSound"][value="${s.alarmSound || "classic"}"]`) as HTMLInputElement | null;
   if (radio) radio.checked = true;
+
+  const eventAlarmEl = $("eventAlarmEnabled") as HTMLInputElement | null;
+  if (eventAlarmEl) eventAlarmEl.checked = s.eventAlarmEnabled !== false;
+
+  const eventRadio = document.querySelector(`input[name="eventAlarmSound"][value="${s.eventAlarmSound || "classic"}"]`) as HTMLInputElement | null;
+  if (eventRadio) eventRadio.checked = true;
 
   updateCustomAlarmDisplay(s.customAlarmName, s.customAlarmData);
 
@@ -319,6 +365,7 @@ function loadFormValues(s: Settings): void {
 
 function collectFormValues(): Settings {
   const selectedRadio = document.querySelector('input[name="alarmSound"]:checked') as HTMLInputElement | null;
+  const selectedEventRadio = document.querySelector('input[name="eventAlarmSound"]:checked') as HTMLInputElement | null;
   return {
     schoolName: $("schoolNameInput").value.trim(),
     schoolCode: $("schoolCode").value.trim(),
@@ -327,15 +374,19 @@ function collectFormValues(): Settings {
     classNum: parseInt($("classNum").value) || 0,
     latitude: parseFloat(($("latitude") as HTMLInputElement).value) || 0,
     longitude: parseFloat(($("longitude") as HTMLInputElement).value) || 0,
-    spreadsheetUrl: $("spreadsheetUrl").value.trim(),
+    studyPlanFolder: ($("studyPlanFolder") as HTMLInputElement | null)?.value.trim() || "",
     useCustomApiKey: ($("useCustomApiKey") as HTMLInputElement).checked,
     customApiKey: $("customApiKey").value.trim(),
     alarmEnabled: ($("alarmEnabled") as HTMLInputElement).checked,
     alarmSound: selectedRadio?.value || "classic",
     customAlarmData: pendingCustomAlarmData,
     customAlarmName: pendingCustomAlarmName,
+    timeAnnouncement: ($("timeAnnouncement") as HTMLInputElement | null)?.checked ?? false,
+    panelOpacity: parseFloat(($("panelOpacity") as HTMLInputElement)?.value) || 0.5,
     backgroundId: selectedBackgroundId,
     customBackgrounds: customBackgrounds,
+    eventAlarmEnabled: ($("eventAlarmEnabled") as HTMLInputElement | null)?.checked ?? true,
+    eventAlarmSound: selectedEventRadio?.value || "classic",
   };
 }
 
@@ -534,23 +585,34 @@ export async function initSettings(): Promise<void> {
     });
   }
 
+  // Panel Opacity slider
+  const panelOpacityInput = document.getElementById("panelOpacity") as HTMLInputElement;
+  const panelOpacityValue = document.getElementById("panelOpacityValue");
+  if (panelOpacityInput && panelOpacityValue) {
+    const updateOpacityPreview = () => {
+      const val = parseFloat(panelOpacityInput.value);
+      panelOpacityValue.textContent = `${Math.round(val * 100)}%`;
+      document.documentElement.style.setProperty("--bg-panel", `rgba(255, 255, 255, ${val})`);
+      document.documentElement.style.setProperty("--bg-panel-hover", `rgba(255, 255, 255, ${Math.min(1, val + 0.15)})`);
+    };
+    
+    // Initialize correctly when loading
+    panelOpacityInput.value = String(settings.panelOpacity ?? 0.5);
+    updateOpacityPreview();
+    
+    panelOpacityInput.addEventListener("input", updateOpacityPreview);
+  }
+
   // Close settings overlay
+  const settingsOverlay = document.getElementById("settingsOverlay");
   document.getElementById("btnCloseSettings")?.addEventListener("click", () => {
-    document.getElementById("settingsOverlay")?.classList.remove("open");
+    settingsOverlay?.classList.remove("open");
   });
-
-  // Help modal (spreadsheet)
-  const helpOverlay = document.getElementById("helpOverlay")!;
-  document.getElementById("btnHelp")?.addEventListener("click", () => {
-    helpOverlay.classList.add("open");
+  settingsOverlay?.addEventListener("click", (e) => {
+    if (e.target === settingsOverlay) {
+      settingsOverlay.classList.remove("open");
+    }
   });
-  document.getElementById("btnCloseHelp")?.addEventListener("click", () => {
-    helpOverlay.classList.remove("open");
-  });
-  helpOverlay.addEventListener("click", (e) => {
-    if (e.target === helpOverlay) helpOverlay.classList.remove("open");
-  });
-
   // API key toggle
   const useCustomApiKeyCheckbox = $("useCustomApiKey") as HTMLInputElement;
   const customApiKeyGroup = document.getElementById("customApiKeyGroup");
@@ -573,16 +635,25 @@ export async function initSettings(): Promise<void> {
   });
 
   // Search school (uses Go backend)
-  document.getElementById("searchSchoolBtn")!.addEventListener("click", async () => {
-    const schoolName = $("schoolNameInput").value.trim();
+  const schoolNameInput = $("schoolNameInput") as HTMLInputElement;
+  const searchSchoolBtn = document.getElementById("searchSchoolBtn") as HTMLButtonElement;
+
+  schoolNameInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      searchSchoolBtn?.click();
+    }
+  });
+
+  searchSchoolBtn.addEventListener("click", async () => {
+    const schoolName = schoolNameInput.value.trim();
     if (!schoolName) {
       showStatus("학교 이름을 입력하세요", "error");
       return;
     }
 
-    const btn = document.getElementById("searchSchoolBtn") as HTMLButtonElement;
-    btn.textContent = "검색 중...";
-    btn.disabled = true;
+    searchSchoolBtn.textContent = "검색 중...";
+    searchSchoolBtn.disabled = true;
 
     try {
       const result = await window.go.main.App.SearchSchool(schoolName);
@@ -596,8 +667,8 @@ export async function initSettings(): Promise<void> {
     } catch (e) {
       showStatus("학교 검색 중 오류가 발생했습니다", "error");
     } finally {
-      btn.textContent = "검색";
-      btn.disabled = false;
+      searchSchoolBtn.textContent = "검색";
+      searchSchoolBtn.disabled = false;
     }
   });
 
@@ -609,6 +680,17 @@ export async function initSettings(): Promise<void> {
       const preset = (btn as HTMLElement).dataset.preset!;
       playPreview(preset);
     });
+  });
+
+  // Study plan folder picker
+  document.getElementById("btnPickStudyPlanFolder")?.addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const path = await (window.go.main.App as any).PickStudyPlanFolder();
+    if (path) {
+      const folderEl = document.getElementById("studyPlanFolder") as HTMLInputElement | null;
+      if (folderEl) folderEl.value = path;
+    }
   });
 
   // Custom alarm file picker (uses Go backend)
@@ -701,11 +783,17 @@ export async function initSettings(): Promise<void> {
     }
   });
 
-  // Save (uses Go backend)
-  document.getElementById("saveBtn")!.addEventListener("click", async () => {
-    const values = collectFormValues();
-    await window.go.main.App.SaveSettings(values);
-    showStatus("설정이 저장되었습니다", "success");
+  // Auto-save wiring
+  const inputs = document.querySelectorAll<HTMLInputElement | HTMLSelectElement>("#settingsOverlay input, #settingsOverlay select");
+  inputs.forEach(input => {
+    if (input.id === "searchSchoolInput" || input.id === "panelOpacity" || input.type === "radio") {
+       input.addEventListener("input", () => triggerAutoSave());
+    } else {
+       input.addEventListener("change", () => triggerAutoSave());
+       if (input.type === "text" || input.type === "number") {
+           input.addEventListener("input", () => triggerAutoSave(false));
+       }
+    }
   });
 
   // Reset
@@ -719,15 +807,19 @@ export async function initSettings(): Promise<void> {
         classNum: 0,
         latitude: 0,
         longitude: 0,
-        spreadsheetUrl: "",
+        studyPlanFolder: "",
         useCustomApiKey: false,
         customApiKey: "",
         alarmEnabled: true,
         alarmSound: "classic",
         customAlarmData: "",
         customAlarmName: "",
+        timeAnnouncement: false,
+        panelOpacity: 0.5,
         backgroundId: "",
         customBackgrounds: [],
+        eventAlarmEnabled: true,
+        eventAlarmSound: "classic",
       };
       await window.go.main.App.SaveSettings(defaultSettings);
       const reloaded = await window.go.main.App.GetSettings();

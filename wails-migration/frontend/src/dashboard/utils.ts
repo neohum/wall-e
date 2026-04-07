@@ -22,9 +22,13 @@ export function formatTime(date: Date): string {
 }
 
 export function formatDateCompact(dateStr: string): { month: string; day: string; dayOfWeek: string } {
-  const y = parseInt(dateStr.slice(0, 4));
-  const m = parseInt(dateStr.slice(4, 6));
-  const d = parseInt(dateStr.slice(6, 8));
+  const cleanDate = dateStr.replace(/-/g, "");
+  if (cleanDate.length !== 8) {
+    return { month: "", day: "", dayOfWeek: "" };
+  }
+  const y = parseInt(cleanDate.slice(0, 4));
+  const m = parseInt(cleanDate.slice(4, 6));
+  const d = parseInt(cleanDate.slice(6, 8));
   const date = new Date(y, m - 1, d);
   return {
     month: `${m}월`,
@@ -34,9 +38,10 @@ export function formatDateCompact(dateStr: string): { month: string; day: string
 }
 
 export function isToday(dateStr: string): boolean {
+  const cleanDate = dateStr.replace(/-/g, "");
   const now = new Date();
   const todayStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
-  return dateStr === todayStr;
+  return cleanDate === todayStr;
 }
 
 export function getTodayStr(): string {

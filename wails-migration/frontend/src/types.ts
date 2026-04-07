@@ -8,15 +8,27 @@ export interface Settings {
   classNum: number;
   latitude: number;
   longitude: number;
-  spreadsheetUrl: string;
+  studyPlanFolder: string;
   useCustomApiKey: boolean;
   customApiKey: string;
   alarmEnabled: boolean;
   alarmSound: string;
   customAlarmData: string;
   customAlarmName: string;
+  timeAnnouncement: boolean;
+  panelOpacity: number;
   backgroundId: string;
   customBackgrounds: CustomBackground[];
+  eventAlarmEnabled: boolean;
+  eventAlarmSound: string;
+}
+
+export interface CustomEvent {
+  id: string;
+  date: string;
+  time: string;
+  name: string;
+  alarmEnabled: boolean;
 }
 
 export interface CustomBackground {
@@ -80,6 +92,10 @@ export interface DashboardData {
   events: ScheduleEvent[];
   timetable: TimetableData | null;
   studyPlan: StudyPlanResult | null;
+  studyPlanSVGs?: string[];
+  studyPlanError?: string;
+  studyPlanIsConverting?: boolean;
+  studyPlanCurrentIndex?: number;
 }
 
 export interface SchoolInfo {

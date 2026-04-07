@@ -284,7 +284,11 @@ body {
 /* ===== Main Content ===== */
 .main-content {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 8fr 4fr 3fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "timetable meals events"
+    "studyplan studyplan events";
   gap: 16px;
   padding: 16px 24px;
   flex: 1;
@@ -292,35 +296,40 @@ body {
   overflow: hidden;
 }
 
-/* Left column: timetable + study plan stacked */
-.left-column {
+.timetable-panel {
+  grid-area: timetable;
+  /* Allow height to be dictated by content but stretch to match row height */
+}
+
+.meals-panel {
+  grid-area: meals;
+}
+
+.events-panel {
+  grid-area: events;
+}
+
+.meals-wrapper {
+  grid-area: meals;
+  position: relative;
+  min-height: 0;
+}
+
+.events-wrapper {
+  grid-area: events;
+  position: relative;
+  min-height: 0;
+}
+
+.study-plan-panel {
+  grid-area: studyplan;
   display: flex;
   flex-direction: column;
-  gap: 16px;
   min-height: 0;
-  overflow-y: auto;
 }
 
-.left-column::-webkit-scrollbar {
-  width: 4px;
-}
-.left-column::-webkit-scrollbar-track {
-  background: transparent;
-}
-.left-column::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.4);
-  border-radius: 2px;
-}
-
-/* Timetable panel: shrink to content */
-.left-column .timetable-panel {
-  flex-shrink: 0;
-}
-
-/* Study plan panel: fills remaining space */
-.left-column .study-plan-panel {
-  flex: 1;
-  min-height: 0;
+.study-plan-panel .panel__body {
+  padding: 0;
 }
 
 /* ===== Panel ===== */
@@ -653,6 +662,57 @@ body {
   color: var(--text-muted);
   padding: 40px 16px;
   font-size: 0.85rem;
+}
+
+/* Study plan conversion error */
+.study-plan-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.study-plan-error__icon {
+  font-size: 1.8rem;
+}
+
+.study-plan-error__msg {
+  font-size: 0.78rem;
+  color: var(--accent-red, #dc2626);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-width: 100%;
+  line-height: 1.5;
+  background: rgba(220, 38, 38, 0.06);
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+
+/* Study plan loading spinner */
+.study-plan-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 60px 16px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.study-plan-loading__spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(59, 130, 246, 0.18);
+  border-top-color: var(--accent-cyan, #3b82f6);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .error-message {
