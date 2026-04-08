@@ -134,6 +134,8 @@ declare global {
           UpdateCustomEvent(e: WallECustomEvent): Promise<void>;
           DeleteCustomEvent(id: string): Promise<void>;
           PickStudyPlanFolder(): Promise<string>;
+          GetCustomTimetableTimes(): Promise<import("../types").PeriodTime[]>;
+          SaveCustomTimetableTimes(periods: import("../types").PeriodTime[]): Promise<void>;
         };
       };
     };
@@ -251,6 +253,80 @@ export async function initDashboard(): Promise<void> {
   initGridLayout();
   await loadDashboardData();
   startUpdateLoop();
+
+  // Add Timetable Time Edit handlers
+  const editTimeBtn = document.getElementById("btnEditTimetableTime");
+  const editTimeOverlay = document.getElementById("editTimeOverlay");
+  const closeEditTimeBtn = document.getElementById("btnCloseEditTime");
+  const saveEditTimeBtn = document.getElementById("btnSaveEditTime");
+  const addPeriodBtn = document.getElementById("btnAddPeriod");
+
+  if (addPeriodBtn) {
+    addPeriodBtn.addEventListener("click", () => {
+      const items = document.getElementById("editTimeList")?.querySelectorAll(".edit-time-item");
+      let nextStart = "";
+      let nextEnd = "";
+      if (items && items.length > 0) {
+          const lastEnd = (items[items.length - 1].querySelector('.end-input') as HTMLInputElement).value;
+          if (lastEnd) {
+             const [h, m] = lastEnd.split(':').map(Number);
+             const startM = (m + 10) % 60;
+             const startH = h + Math.floor((m + 10) / 60);
+             const endM = (startM + 40) % 60;
+             const endH = startH + Math.floor((startM + 40) / 60);
+             
+             nextStart = `${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}`;
+             nextEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+          }
+      }
+      addPeriodRow(nextStart, nextEnd);
+    });
+  }
+
+  if (editTimeBtn && editTimeOverlay) {
+    editTimeBtn.addEventListener("click", () => {
+      editTimeOverlay.classList.add("open");
+      renderEditTimeList();
+    });
+  }
+
+  if (closeEditTimeBtn && editTimeOverlay) {
+    closeEditTimeBtn.addEventListener("click", () => editTimeOverlay.classList.remove("open"));
+  }
+
+  if (editTimeOverlay) {
+    editTimeOverlay.addEventListener("click", (e) => {
+      if (e.target === editTimeOverlay) editTimeOverlay.classList.remove("open");
+    });
+  }
+
+  if (saveEditTimeBtn) {
+    saveEditTimeBtn.addEventListener("click", async () => {
+      const listDiv = document.getElementById("editTimeList");
+      if (!listDiv) return;
+
+      const items = listDiv.querySelectorAll(".edit-time-item");
+      const newPeriods: import("../types").PeriodTime[] = [];
+
+      let periodIndex = 1;
+      items.forEach((item) => {
+        const start = (item.querySelector(".start-input") as HTMLInputElement).value;
+        const end = (item.querySelector(".end-input") as HTMLInputElement).value;
+        if (start && end) {
+          newPeriods.push({ period: periodIndex++, start, end });
+        }
+      });
+
+      try {
+        await window.go.main.App.SaveCustomTimetableTimes(newPeriods);
+        editTimeOverlay?.classList.remove("open");
+        await loadDashboardData(); // Re-fetch dashboard data to apply new times
+      } catch (err) {
+        console.error("Failed to save custom timetable times:", err);
+        alert("시간표 시간 수정에 실패했습니다.");
+      }
+    });
+  }
 
   // Add Event Overlay handlers
   const openEventBtn = document.getElementById("btnAddEvent");
@@ -584,6 +660,63 @@ function updateTimetable(): void {
   if (weekEl) {
     weekEl.textContent = formatDate(now);
   }
+}
+
+function updatePeriodLabels() {
+  const container = document.getElementById("editTimeList");
+  if (!container) return;
+  const items = container.querySelectorAll(".edit-time-item");
+  items.forEach((item, index) => {
+    const label = item.querySelector(".period-label");
+    if (label) label.textContent = String(index + 1);
+    (item as HTMLElement).dataset.period = String(index + 1);
+  });
+}
+
+function addPeriodRow(start = "", end = "") {
+  const container = document.getElementById("editTimeList");
+  if (!container) return;
+  const item = document.createElement("div");
+  item.className = "edit-time-item";
+  item.style.display = "flex";
+  item.style.alignItems = "center";
+  item.style.gap = "8px";
+
+  item.innerHTML = `
+    <div style="width:45px; font-weight:bold; font-size:0.9rem;"><span class="period-label"></span>교시</div>
+    <input type="time" class="start-input" value="${start}" style="flex:1; border:1px solid rgba(0,0,0,0.1); background:rgba(255,255,255,0.7); border-radius:4px; padding:4px;">
+    <span>~</span>
+    <input type="time" class="end-input" value="${end}" style="flex:1; border:1px solid rgba(0,0,0,0.1); background:rgba(255,255,255,0.7); border-radius:4px; padding:4px;">
+    <button class="btn-remove-period" style="background:none; border:none; color:var(--accent-red,#dc2626); cursor:pointer; font-weight:bold; padding:0 4px; font-size:1.1rem; line-height:1;" title="삭제">&times;</button>
+  `;
+
+  // Remove event
+  item.querySelector('.btn-remove-period')?.addEventListener('click', () => {
+    item.remove();
+    updatePeriodLabels();
+  });
+
+  container.appendChild(item);
+  updatePeriodLabels();
+}
+
+function renderEditTimeList() {
+  const container = document.getElementById("editTimeList");
+  if (!container) return;
+
+  container.innerHTML = "";
+  
+  const timetable = dashboardData?.timetable;
+  let periods = timetable?.periods || [];
+  
+  if (periods.length === 0) {
+    addPeriodRow("09:00", "09:50");
+    return;
+  }
+
+  periods.forEach(p => {
+    addPeriodRow(p.start, p.end);
+  });
 }
 
 // ===== Meals =====

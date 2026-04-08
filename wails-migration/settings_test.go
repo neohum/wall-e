@@ -191,7 +191,6 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 		ClassNum:        3,
 		Latitude:        37.5665,
 		Longitude:       126.9780,
-		SpreadsheetURL:  "https://docs.google.com/spreadsheets/d/example",
 		AlarmEnabled:    true,
 		AlarmSound:      "bell",
 		CustomAlarmData: "base64encodeddata==",
@@ -226,9 +225,6 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	if loaded.Longitude != original.Longitude {
 		t.Errorf("Longitude: got %v, want %v", loaded.Longitude, original.Longitude)
 	}
-	if loaded.SpreadsheetURL != original.SpreadsheetURL {
-		t.Errorf("SpreadsheetURL: got %q, want %q", loaded.SpreadsheetURL, original.SpreadsheetURL)
-	}
 	if loaded.AlarmEnabled != original.AlarmEnabled {
 		t.Errorf("AlarmEnabled: got %v, want %v", loaded.AlarmEnabled, original.AlarmEnabled)
 	}
@@ -259,7 +255,6 @@ func TestSettingsJSONFieldNames(t *testing.T) {
 		ClassNum:        2,
 		Latitude:        10.1,
 		Longitude:       20.2,
-		SpreadsheetURL:  "D",
 		AlarmEnabled:    true,
 		AlarmSound:      "E",
 		CustomAlarmData: "F",
@@ -285,7 +280,6 @@ func TestSettingsJSONFieldNames(t *testing.T) {
 		"classNum",
 		"latitude",
 		"longitude",
-		"spreadsheetUrl",
 		"alarmEnabled",
 		"alarmSound",
 		"customAlarmData",

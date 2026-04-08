@@ -95,6 +95,26 @@ func (a *App) UpdateCustomEvent(e CustomEvent) error {
 	return nil
 }
 
+// ===== Custom Timetable Times bindings =====
+
+func (a *App) GetCustomTimetableTimes() []PeriodTime {
+	times, err := GetCustomTimetableTimesFromDB()
+	if err != nil {
+		runtime.LogError(a.ctx, "Failed to get custom timetable times: "+err.Error())
+		return []PeriodTime{}
+	}
+	return times
+}
+
+func (a *App) SaveCustomTimetableTimes(periods []PeriodTime) error {
+	err := SaveCustomTimetableTimesToDB(periods)
+	if err != nil {
+		runtime.LogError(a.ctx, "Failed to save custom timetable times: "+err.Error())
+		return err
+	}
+	return nil
+}
+
 // ===== Dashboard data =====
 
 type DashboardData struct {
@@ -185,17 +205,64 @@ func (a *App) FetchDashboardData() DashboardData {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		var tt *TimetableData
 		if apiKey != "" && s.SchoolCode != "" && s.OfficeCode != "" {
-			tt, err := fetchNEISTimetable(apiKey, s.OfficeCode, s.SchoolCode, s.SchoolName, s.Grade, s.ClassNum)
+			var err error
+			tt, err = fetchNEISTimetable(apiKey, s.OfficeCode, s.SchoolCode, s.SchoolName, s.Grade, s.ClassNum)
 			if err != nil {
 				runtime.LogError(a.ctx, "NEIS Timetable fetch error: "+err.Error())
 			}
-			mu.Lock()
-			if tt != nil {
-				result.Timetable = tt
-			}
-			mu.Unlock()
 		}
+
+		if tt == nil {
+			tt = &TimetableData{Periods: []PeriodTime{}}
+		}
+
+		// Override with custom times if any
+		customTimes, err := GetCustomTimetableTimesFromDB()
+		if err == nil && len(customTimes) > 0 {
+			customTimeMap := make(map[int]PeriodTime)
+			maxCustom := 0
+			for _, ct := range customTimes {
+				customTimeMap[ct.Period] = ct
+				if ct.Period > maxCustom {
+					maxCustom = ct.Period
+				}
+			}
+			
+			var newPeriods []PeriodTime
+			maxNEIS := 0
+			
+			// Build map of original NEIS periods
+			neisTimeMap := make(map[int]PeriodTime)
+			for _, p := range tt.Periods {
+				neisTimeMap[p.Period] = p
+				if p.Period > maxNEIS {
+					maxNEIS = p.Period
+				}
+			}
+			
+			maxTotal := maxNEIS
+			if maxCustom > maxTotal {
+				maxTotal = maxCustom
+			}
+			
+			for i := 1; i <= maxTotal; i++ {
+				if ct, ok := customTimeMap[i]; ok {
+					newPeriods = append(newPeriods, ct)
+				} else if op, ok := neisTimeMap[i]; ok {
+					newPeriods = append(newPeriods, op)
+				} else {
+					// Should not have gaps, but safely fill
+					newPeriods = append(newPeriods, PeriodTime{Period: i, Start: "", End: ""})
+				}
+			}
+			tt.Periods = newPeriods
+		}
+
+		mu.Lock()
+		result.Timetable = tt
+		mu.Unlock()
 	}()
 
 	// Sheet events removed

@@ -396,7 +396,7 @@ body {
 }
 
 .timetable th {
-  background: rgba(59, 130, 246, 0.1);
+  background: #f0f4fa;
   color: var(--accent-cyan);
   font-weight: 700;
   font-size: 0.8rem;
@@ -404,7 +404,7 @@ body {
   letter-spacing: 0.5px;
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 10;
 }
 
 .timetable th.period-col {

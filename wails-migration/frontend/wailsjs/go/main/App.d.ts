@@ -24,6 +24,8 @@ export function GetCustomBackgroundURL(arg1:string):Promise<string>;
 
 export function GetCustomEvents():Promise<Array<main.CustomEvent>>;
 
+export function GetCustomTimetableTimes():Promise<Array<main.PeriodTime>>;
+
 export function GetNeisAPIKey():Promise<string>;
 
 export function GetSettings():Promise<main.Settings>;
@@ -41,6 +43,8 @@ export function PickBackgroundFile():Promise<main.BackgroundFileResult>;
 export function PickStudyPlanFolder():Promise<string>;
 
 export function RemoveCustomBackground(arg1:string):Promise<void>;
+
+export function SaveCustomTimetableTimes(arg1:Array<main.PeriodTime>):Promise<void>;
 
 export function SaveSettings(arg1:main.Settings):Promise<void>;
 

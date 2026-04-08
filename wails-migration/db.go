@@ -41,6 +41,18 @@ func initDB() error {
 		return fmt.Errorf("failed to create custom_events table: %w", err)
 	}
 
+	createTimetableQuery := `
+	CREATE TABLE IF NOT EXISTS custom_timetable_times (
+		period INTEGER PRIMARY KEY,
+		start_time TEXT NOT NULL,
+		end_time TEXT NOT NULL
+	);
+	`
+	_, err = db.Exec(createTimetableQuery)
+	if err != nil {
+		return fmt.Errorf("failed to create custom_timetable_times table: %w", err)
+	}
+
 	return nil
 }
 
@@ -128,4 +140,63 @@ func UpdateCustomEventInDB(e CustomEvent) error {
 		return fmt.Errorf("failed to update event: %w", err)
 	}
 	return nil
+}
+
+func GetCustomTimetableTimesFromDB() ([]PeriodTime, error) {
+	periods := []PeriodTime{}
+
+	if db == nil {
+		return periods, fmt.Errorf("database not initialized")
+	}
+
+	rows, err := db.Query("SELECT period, start_time, end_time FROM custom_timetable_times ORDER BY period ASC")
+	if err != nil {
+		return periods, fmt.Errorf("failed to query custom timetable times: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var p PeriodTime
+		err := rows.Scan(&p.Period, &p.Start, &p.End)
+		if err != nil {
+			return periods, fmt.Errorf("failed to scan period row: %w", err)
+		}
+		periods = append(periods, p)
+	}
+
+	return periods, nil
+}
+
+func SaveCustomTimetableTimesToDB(periods []PeriodTime) error {
+	if db == nil {
+		return fmt.Errorf("database not initialized")
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	_, err = tx.Exec("DELETE FROM custom_timetable_times")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to clear custom_timetable_times: %w", err)
+	}
+
+	stmt, err := tx.Prepare("INSERT INTO custom_timetable_times (period, start_time, end_time) VALUES (?, ?, ?)")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to prepare insert statement: %w", err)
+	}
+	defer stmt.Close()
+
+	for _, p := range periods {
+		_, err = stmt.Exec(p.Period, p.Start, p.End)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to insert period %d: %w", p.Period, err)
+		}
+	}
+
+	return tx.Commit()
 }
