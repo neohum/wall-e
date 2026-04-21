@@ -77,6 +77,11 @@ export function initTimer(): void {
       }
       isDragging = false;
     });
+
+    fab.addEventListener("pointercancel", (e) => {
+      fab.releasePointerCapture(e.pointerId);
+      isDragging = false;
+    });
   }
 
   // Interface Modal Logic

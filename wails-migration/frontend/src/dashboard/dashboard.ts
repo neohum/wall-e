@@ -76,6 +76,7 @@ function getPMLevelLabel(level: PMLevel): string {
 // ===== State =====
 let dashboardData: DashboardData | null = null;
 let cachedSettings: Settings | null = null;
+let cachedCustomEvents: WallECustomEvent[] = [];
 let lastFetchTime = 0;
 const FETCH_INTERVAL = 30 * 60 * 1000;
 
@@ -389,6 +390,7 @@ export async function initDashboard(): Promise<void> {
           await window.go.main.App.AddCustomEvent(newEvent);
         }
         
+        cachedCustomEvents = await window.go.main.App.GetCustomEvents() || [];
         addEventOverlay?.classList.remove("open");
         editingEventId = null;
         updateEvents(); // Re-render
@@ -782,7 +784,7 @@ async function updateEvents(): Promise<void> {
   if (!container) return;
 
   const neisEvents = dashboardData?.events ?? [];
-  const customEvents = await window.go.main.App.GetCustomEvents() || [];
+  const customEvents = cachedCustomEvents;
 
   // Filter custom events conceptually to either future/current month or just include all and sort
   // For simplicity, include all since the user probably manages their own event list
@@ -868,6 +870,7 @@ async function updateEvents(): Promise<void> {
       if (id && confirm("이 맞춤형 행사를 삭제하시겠습니까?")) {
         try {
           await window.go.main.App.DeleteCustomEvent(id);
+          cachedCustomEvents = await window.go.main.App.GetCustomEvents() || [];
           updateEvents(); // Re-render
         } catch (err) {
           console.error("Failed to delete custom event:", err);
@@ -1089,6 +1092,7 @@ async function loadDashboardData(): Promise<void> {
 
   try {
     dashboardData = await window.go.main.App.FetchDashboardData();
+    cachedCustomEvents = await window.go.main.App.GetCustomEvents() || [];
     lastFetchTime = Date.now();
     updateWeather();
     updateAirQuality();
@@ -1199,13 +1203,12 @@ function startUpdateLoop(): void {
     }
     
     // Add custom event alarm checking
-    window.go.main.App.GetCustomEvents().then((customEvents: any) => {
-      if (!customEvents) return;
-      const ceAlarm = checkAndPlayCustomEventAlarms(customEvents, settings.eventAlarmEnabled, settings.eventAlarmSound);
+    if (cachedCustomEvents.length > 0) {
+      const ceAlarm = checkAndPlayCustomEventAlarms(cachedCustomEvents, settings.eventAlarmEnabled, settings.eventAlarmSound);
       if (ceAlarm) {
         showCustomEventAlarmPopup(ceAlarm);
       }
-    });
+    }
 
     checkAndPlayHourlyChime(settings.timeAnnouncement);
     resetAlarmsIfNewDay();
